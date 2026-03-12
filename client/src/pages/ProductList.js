@@ -30,6 +30,13 @@ function ProductList() {
     const current = stored ? JSON.parse(stored) : [];
     const existing = current.find((i) => i._id === product._id);
 
+    const currentQtyInCart = existing ? existing.quantityKg : 0;
+
+    if (currentQtyInCart + 1 > product.stockKg) {
+      alert(`Sorry, only ${product.stockKg} kg of ${product.name} available in total.`);
+      return;
+    }
+
     if (existing) {
       existing.quantityKg += 1;
     } else {
@@ -179,8 +186,8 @@ function ProductList() {
                     {/* Stock & Action - Fixed at bottom */}
                     <div className="flex items-center justify-between pt-2 border-t border-emerald-50 mt-auto">
                       <span className={`text-xs px-2 py-1 rounded-full font-semibold border ${p.stockKg < 10 ? 'bg-red-50 text-red-700 border-red-200' :
-                          p.stockKg < 50 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                            'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        p.stockKg < 50 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                          'bg-emerald-50 text-emerald-700 border-emerald-200'
                         }`}>
                         {p.stockKg} {p.unit || 'kg'} left
                       </span>

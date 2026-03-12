@@ -2,27 +2,30 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import Navbar from '../components/Navbar';
 import VoiceInput from '../components/VoiceInput';
 import { api } from '../api';
+import { Sparkles } from 'lucide-react';
 
 function FarmerDashboard() {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  
+
   const initialFormState = {
     name: '',
     category: '',
     unit: 'kg',
     pricePerKg: '',
     stockKg: '',
+    lowStockThreshold: 10,
     description: '',
     location: '',
     image: null,
   };
-  
+
   const [formData, setFormData] = useState(initialFormState);
   const user = useMemo(() => {
     try {
@@ -35,7 +38,7 @@ function FarmerDashboard() {
   // 🚀 NEW: Smart Voice Auto-fill Handler
   const handleSmartVoiceFill = useCallback((parsed) => {
     console.log('🗣️ Smart Voice Result:', parsed);
-    
+
     // Auto-fill matched fields
     if (parsed.smartData.name) {
       setFormData(prev => ({ ...prev, name: parsed.smartData.name }));
@@ -57,12 +60,12 @@ function FarmerDashboard() {
     }
 
     // Success feedback
-    if (parsed.confidence > 1) {
+    if (parsed.confidence > 0) {
       const fields = Object.keys(parsed.smartData).length;
-      alert(`✅ Auto-filled ${fields} fields! 🎉\n\nWhat was heard: "${parsed.singleField}"`);
+      console.log(`✅ Auto-filled ${fields} fields!`);
     } else {
-      // Single field fallback
-      setFormData(prev => ({ ...prev, name: parsed.singleField }));
+      // Fallback
+      setFormData(prev => ({ ...prev, name: parsed.rawText }));
     }
   }, []);
 
@@ -77,8 +80,8 @@ function FarmerDashboard() {
       const res = await api.get('/products', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
-      const mine = res.data.filter((p) => 
+
+      const mine = res.data.filter((p) =>
         p.farmer === user.id || p.farmer?._id === user.id
       );
       setProducts(mine);
@@ -91,17 +94,56 @@ function FarmerDashboard() {
   }, [user?.id]);
 
   // Load Orders
-  const loadOrders = useCallback(() => {
+  const loadOrders = useCallback(async () => {
     try {
-      const storedOrders = localStorage.getItem('orders');
-      if (storedOrders) {
-        setOrders(JSON.parse(storedOrders));
-      }
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const res = await api.get('/orders/farmer-orders', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setOrders(res.data);
     } catch (err) {
-      console.error('Failed to load orders:', err);
-      setOrders([]);
+      console.error('Failed to load API orders:', err);
+      // Fallback to local storage (for legacy UI reasons but safely)
+      try {
+        const storedOrders = localStorage.getItem('orders');
+        if (storedOrders) {
+          setOrders(JSON.parse(storedOrders));
+        } else {
+          setOrders([]);
+        }
+      } catch (e) {
+        setOrders([]);
+      }
     }
   }, []);
+
+  // Load Notifications
+  const loadNotifications = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await api.get('/notifications', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(res.data);
+    } catch (err) {
+      console.error('Failed to load notifications:', err);
+    }
+  }, []);
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      await api.patch(`/notifications/${id}/read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      loadNotifications();
+    } catch (err) {
+      console.error('Failed to mark as read', err);
+    }
+  };
 
   // Initial Load
   useEffect(() => {
@@ -111,7 +153,8 @@ function FarmerDashboard() {
     }
     loadProducts();
     loadOrders();
-  }, [loadProducts, loadOrders, user]);
+    loadNotifications();
+  }, [loadProducts, loadOrders, loadNotifications, user]);
 
   // Reset Form
   const resetForm = useCallback(() => {
@@ -138,6 +181,7 @@ function FarmerDashboard() {
       unit: product.unit || 'kg',
       pricePerKg: product.pricePerKg || '',
       stockKg: product.stockKg || '',
+      lowStockThreshold: product.lowStockThreshold || 10,
       description: product.description || '',
       location: product.location || '',
       image: null,
@@ -155,7 +199,7 @@ function FarmerDashboard() {
   // Delete Product
   const handleDelete = useCallback(async (productId) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
-    
+
     try {
       const token = localStorage.getItem('token');
       await api.delete(`/products/${productId}`, {
@@ -197,7 +241,7 @@ function FarmerDashboard() {
       });
 
       await api.post('/products', data, {
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
@@ -231,7 +275,7 @@ function FarmerDashboard() {
       });
 
       await api.put(`/products/${editingProduct._id}`, data, {
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
@@ -248,7 +292,7 @@ function FarmerDashboard() {
 
   // Memoized Stats
   const stats = useMemo(() => {
-    const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || o.total || 0), 0);
     const activeOrders = orders.length;
     return { totalRevenue, activeOrders };
   }, [orders]);
@@ -272,8 +316,8 @@ function FarmerDashboard() {
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm">
             {error}
-            <button 
-              onClick={() => setError(null)} 
+            <button
+              onClick={() => setError(null)}
               className="ml-4 hover:text-red-900 font-medium"
             >
               Dismiss
@@ -317,59 +361,107 @@ function FarmerDashboard() {
         {/* Products Grid */}
         <section className="mb-8">
           <h2 className="text-lg font-bold text-emerald-900 mb-4">Your Inventory</h2>
-          
+
           {products.length === 0 ? (
             <div className="bg-white rounded-2xl border border-emerald-100 p-12 text-center">
               <p className="text-emerald-900/60">No products yet. Add your first product above!</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((p) => (
-                <div key={p._id} className="bg-white rounded-2xl border border-emerald-100 p-4 shadow-sm hover:shadow-md transition">
-                  <div className="h-40 rounded-xl bg-gray-100 mb-4 overflow-hidden relative group">
-                    {p.image ? (
-                      <img
-                        src={`http://localhost:5000${p.image}`}
-                        alt={p.name}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-gray-400 text-sm">No Image</div>
+              {products.map((p) => {
+                const isLowStock = p.stockKg <= (p.lowStockThreshold || 10);
+                return (
+                  <div key={p._id} className={`bg-white rounded-2xl border ${isLowStock ? 'border-red-300 shadow-red-100' : 'border-emerald-100'} p-4 shadow-sm hover:shadow-md transition relative`}>
+
+                    {isLowStock && (
+                      <div className="absolute top-0 right-1/2 translate-x-1/2 -translate-y-1/2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm z-10 flex items-center gap-1">
+                        ⚠️ Low Stock Alert
+                      </div>
                     )}
-                    <span className="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded-lg text-xs font-bold text-emerald-700 shadow-sm">
-                      {p.category}
-                    </span>
-                  </div>
 
-                  <h3 className="font-bold text-emerald-900 text-lg mb-1 line-clamp-2">{p.name}</h3>
-                  <div className="flex justify-between items-center mb-4">
-                    <p className="text-emerald-600 font-medium">₹{parseFloat(p.pricePerKg || 0).toFixed(2)}/{p.unit}</p>
-                    <p className="text-xs text-gray-500">
-                      Stock: {parseFloat(p.stockKg || 0).toFixed(1)} {p.unit}
-                    </p>
-                  </div>
+                    <div className={`h-40 rounded-xl bg-gray-100 mb-4 overflow-hidden relative group ${isLowStock ? 'opacity-80' : ''}`}>
+                      {p.image ? (
+                        <img
+                          src={`http://localhost:5000${p.image}`}
+                          alt={p.name}
+                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-gray-400 text-sm">No Image</div>
+                      )}
+                      <span className="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded-lg text-xs font-bold text-emerald-700 shadow-sm">
+                        {p.category}
+                      </span>
+                    </div>
 
-                  <div className="flex gap-2 border-t border-gray-100 pt-3">
-                    <button 
-                      onClick={() => handleEditClick(p)}
-                      className="flex-1 py-2 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium hover:bg-emerald-100 transition"
-                      aria-label={`Edit ${p.name}`}
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(p._id)}
-                      className="flex-1 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition"
-                      aria-label={`Delete ${p.name}`}
-                    >
-                      Delete
-                    </button>
+                    <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-2">{p.name}</h3>
+                    <div className="flex justify-between items-center mb-4">
+                      <p className="text-emerald-700 font-bold">₹{parseFloat(p.pricePerKg || 0).toFixed(2)}/{p.unit}</p>
+                      <p className={`text-xs font-bold px-2 py-1 rounded-md ${isLowStock ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                        Available: {parseFloat(p.stockKg || 0).toFixed(1)} {p.unit}
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2 border-t border-gray-100 pt-3">
+                      <button
+                        onClick={() => handleEditClick(p)}
+                        className="flex-1 py-2 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium hover:bg-emerald-100 transition"
+                        aria-label={`Edit ${p.name}`}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p._id)}
+                        className="flex-1 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition"
+                        aria-label={`Delete ${p.name}`}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
+        </section>
+
+        {/* Low-Stock Alerts Section */}
+        <section className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-bold text-red-700">Low-Stock Alerts</h2>
+            {notifications.filter(n => !n.read).length > 0 && (
+              <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {notifications.filter(n => !n.read).length} Unread
+              </span>
+            )}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-red-100 overflow-hidden shadow-sm">
+            {notifications.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 font-medium">All good! No low-stock alerts.</div>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {notifications.map((n) => (
+                  <li key={n._id} className={`p-4 flex items-center justify-between ${n.read ? 'bg-gray-50/50 opacity-70' : 'bg-red-50/30'}`}>
+                    <div>
+                      <p className={`font-bold ${n.read ? 'text-gray-700' : 'text-red-700'}`}>{n.title}</p>
+                      <p className="text-sm text-gray-600 mt-1">{n.message}</p>
+                      <p className="text-xs text-gray-400 mt-2">{new Date(n.createdAt).toLocaleString()}</p>
+                    </div>
+                    {!n.read && (
+                      <button
+                        onClick={() => handleMarkAsRead(n._id)}
+                        className="px-4 py-2 border border-red-200 text-red-600 text-sm font-bold rounded-xl hover:bg-red-50 transition shrink-0"
+                      >
+                        Mark as read
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </section>
 
         {/* Orders Section */}
@@ -385,19 +477,27 @@ function FarmerDashboard() {
                     <tr>
                       <th className="p-4 font-semibold min-w-[100px]">Order ID</th>
                       <th className="p-4 font-semibold min-w-[200px]">Items</th>
+                      <th className="p-4 font-semibold min-w-[200px]">Delivery</th>
                       <th className="p-4 font-semibold text-right min-w-[100px]">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-emerald-50">
-                    {orders.map((o) => (
-                      <tr key={o.id} className="hover:bg-emerald-50 transition">
-                        <td className="p-4 text-emerald-900 font-medium">#{o.id.toString().slice(-4)}</td>
-                        <td className="p-4 text-gray-600 max-w-[200px] truncate">
-                          {o.items?.map(i => `${i.name} (${i.qty})`).join(', ') || 'N/A'}
-                        </td>
-                        <td className="p-4 text-right font-medium text-emerald-700">₹{o.total?.toLocaleString()}</td>
-                      </tr>
-                    ))}
+                    {orders.map((o, idx) => {
+                      if (!o) return null;
+                      const idStr = o._id ? String(o._id) : (o.id ? String(o.id) : 'N/A');
+                      return (
+                        <tr key={o._id || o.id || idx} className="hover:bg-emerald-50 transition">
+                          <td className="p-4 text-emerald-900 font-medium">#{idStr !== 'N/A' ? idStr.slice(-4) : 'N/A'}</td>
+                          <td className="p-4 text-gray-600 max-w-[200px] truncate">
+                            {o.items?.map(i => `${i.name} (${i.quantityKg || i.qty || 0}kg)`).join(', ') || 'N/A'}
+                          </td>
+                          <td className="p-4 text-gray-600 text-xs max-w-[200px] truncate">
+                            {o.deliveryAddress || 'No Address'}
+                          </td>
+                          <td className="p-4 text-right font-medium text-emerald-700">₹{(o.totalAmount || o.total || 0).toLocaleString()}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -408,14 +508,14 @@ function FarmerDashboard() {
 
       {/* 🚀 NEW: Smart Voice Modal */}
       {(showAddModal || showEditModal) && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
           onClick={closeModal}
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-title"
         >
-          <div 
+          <div
             className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
@@ -423,7 +523,7 @@ function FarmerDashboard() {
               <h2 id="modal-title" className="text-xl font-bold text-emerald-900">
                 {showEditModal ? 'Edit Product' : 'Add New Product'}
               </h2>
-              <button 
+              <button
                 onClick={closeModal}
                 className="text-gray-400 hover:text-gray-600 text-2xl leading-none p-1 -m-1 rounded-lg hover:bg-gray-100 transition"
                 aria-label="Close modal"
@@ -433,27 +533,31 @@ function FarmerDashboard() {
             </div>
 
             <form onSubmit={showEditModal ? handleUpdateSubmit : handleAddSubmit} className="p-6 space-y-4">
-  {/* 🚀 AI TAMIL VOICE - ONE BUTTON FILLS PERFECT ENGLISH */}
-  <div className="bg-gradient-to-br from-purple-50 to-emerald-50 p-6 rounded-3xl border-4 border-purple-200 shadow-2xl">
-    <div className="text-center mb-4">
-      <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-        🤖 AI Tamil Voice Assistant
-      </h3>
-      <p className="text-sm text-purple-800 font-medium">
-        Say: "உருளைக்கிழங்கு கிலோ 70 பெரம்பலூர்" → Gets "Fresh Potato, ₹70/kg, Perambalur"
-      </p>
-    </div>
-    
-    <VoiceInput 
-      onSmartFill={handleSmartVoiceFill}
-      label="AI Tamil → Perfect English"
-      language="ta-IN"
-    />
-    
-    <div className="mt-4 p-3 bg-white/60 rounded-2xl border text-xs text-purple-700 text-center">
-      Works perfectly: உருளைக்கிழங்கு, தக்காளி, வெங்காயம், அரிசி, மாம்பழம்
-    </div>
-  </div>
+              {/* 🚀 PREMIUM AI TAMIL VOICE BOX */}
+              <div className="bg-gradient-to-br from-indigo-50 via-white to-emerald-50 p-6 rounded-[2rem] border-2 border-indigo-100 shadow-xl overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-200/20 rounded-full -translate-y-16 translate-x-16 blur-3xl text-center" />
+
+                <div className="text-center mb-5">
+                  <h3 className="text-xl font-black text-indigo-900 flex items-center justify-center gap-2">
+                    <Sparkles className="text-indigo-600" size={20} />
+                    AI Tamil Voice Assistant
+                  </h3>
+                  <div className="mt-2 text-[11px] font-bold text-indigo-600/70 leading-relaxed">
+                    Say: <span className="text-indigo-900 font-extrabold italic">"உருளைக்கிழங்கு கிலோ 70 பெரம்பலூர்"</span><br />
+                    <span className="text-[10px] opacity-60">→ Gets "Fresh Potato, ₹70/kg, Perambalur"</span>
+                  </div>
+                </div>
+
+                <VoiceInput
+                  onSmartFill={handleSmartVoiceFill}
+                  label="AI Tamil Voice"
+                  language="ta-IN"
+                />
+
+                <div className="mt-5 p-3 bg-white/80 rounded-2xl border border-indigo-50 text-[10px] font-bold text-indigo-800/60 text-center tracking-wide">
+                  SUPPORTS: உருளைக்கிழங்கு, தக்காளி, வெங்காயம், அரிசி, மாம்பழம்
+                </div>
+              </div>
 
               {/* Name Field */}
               <div className="relative">
@@ -538,18 +642,34 @@ function FarmerDashboard() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-emerald-50"
-                  placeholder="e.g. Perambalur"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Location <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-emerald-50"
+                    placeholder="e.g. Perambalur"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Low Stock Alert
+                  </label>
+                  <input
+                    name="lowStockThreshold"
+                    type="number"
+                    min="1"
+                    value={formData.lowStockThreshold}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-emerald-50"
+                    placeholder="10"
+                  />
+                </div>
               </div>
 
               <div>

@@ -13,6 +13,9 @@ const productSchema = new mongoose.Schema(
     location: String, // village/district
     rating: { type: Number, default: 0 },
     images: [String], // keep for multiple images later
+    lowStockThreshold: { type: Number, default: 10 },
+    lastLowStockAlertSentAt: { type: Date },
+    status: { type: String, enum: ['available', 'out_of_stock'], default: 'available' }
   },
   { timestamps: true } // createdAt, updatedAt
 );

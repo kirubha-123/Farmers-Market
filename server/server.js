@@ -16,13 +16,17 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // 3. Stat
 // ✅ ROUTES (after middleware)
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/product');
-const farmersRoutes = require('./routes/farmers'); // ✅ Make sure this file exists
+const farmersRoutes = require('./routes/farmers');
+const predictionRoutes = require('./routes/prediction');
+const logisticsRoutes = require('./routes/logistics');
+const orderRoutes = require('./routes/orders');
+const notificationRoutes = require('./routes/notifications');
 
 // Test route
 app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Farmers Market API running ✅', 
-    endpoints: ['/api/farmers', '/api/products', '/api/auth'] 
+  res.json({
+    message: 'AgriForge AI API running ✅',
+    endpoints: ['/api/farmers', '/api/products', '/api/auth', '/api/predictions', '/api/logistics', '/api/orders', '/api/notifications']
   });
 });
 
@@ -30,6 +34,10 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/farmers', farmersRoutes);
+app.use('/api/predictions', predictionRoutes);
+app.use('/api/logistics', logisticsRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Error handling middleware (LAST)
 app.use((err, req, res, next) => {

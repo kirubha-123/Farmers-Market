@@ -18,7 +18,7 @@ if (!fs.existsSync(uploadDir)) {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) + 
+    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) +
       path.extname(file.originalname);
     cb(null, uniqueName);
   },
@@ -49,6 +49,46 @@ router.get('/', async (req, res) => {
   }
 });
 
+// ✅ VOICE QUERY ENDPOINT: GET /api/products/search?name=XXX&location=YYY
+router.get('/search', async (req, res) => {
+  try {
+    const { name, location } = req.query;
+    if (!name || !location) {
+      return res.status(400).json({ message: 'Missing name or location query params' });
+    }
+
+    // RegEx for case-insensitive partial match
+    const cropRegex = new RegExp(name, 'i');
+    const locationRegex = new RegExp(location, 'i');
+
+    const products = await Product.find({ name: cropRegex, location: locationRegex });
+
+    if (products.length === 0) {
+      return res.json({
+        cropName: name,
+        remainingQuantity: 0,
+        status: 'not_found',
+        lowStock: false
+      });
+    }
+
+    // Aggregating stock if multiple farmers sell the same crop in that location
+    const totalRemaining = products.reduce((sum, p) => sum + p.stockKg, 0);
+    const lowStockThresholdTotal = products.reduce((sum, p) => sum + (p.lowStockThreshold || 10), 0);
+
+    res.json({
+      cropName: name,
+      remainingQuantity: totalRemaining,
+      status: totalRemaining === 0 ? 'out_of_stock' : 'available',
+      lowStock: totalRemaining <= lowStockThresholdTotal
+    });
+
+  } catch (err) {
+    console.error('GET search error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // ✅ 2. GET single product (Public - Product Details page)
 router.get('/:id', async (req, res) => {
   try {
@@ -66,7 +106,7 @@ router.get('/:id', async (req, res) => {
 router.get('/my-products', auth, async (req, res) => {
   try {
     console.log('🔍 Fetching products for farmer:', req.user.id);
-    
+
     if (req.user.role !== 'farmer') {
       return res.status(403).json({ message: 'Only farmers can access their products' });
     }
@@ -74,7 +114,7 @@ router.get('/my-products', auth, async (req, res) => {
     const products = await Product.find({ farmer: req.user.id })
       .populate('farmer', 'name location')
       .sort({ createdAt: -1 });
-    
+
     console.log(`✅ Found ${products.length} products for farmer`);
     res.json(products);
   } catch (err) {
@@ -94,10 +134,10 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       return res.status(403).json({ message: 'Only farmers can add products' });
     }
 
-    const { name, category = 'general', unit = 'kg', pricePerKg, stockKg, description = '', location = '' } = req.body;
+    const { name, category = 'general', unit = 'kg', pricePerKg, stockKg, lowStockThreshold, description = '', location = '' } = req.body;
 
     if (!name?.trim() || !pricePerKg || !stockKg) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: `Missing required fields: ${!name?.trim() ? 'name' : ''}${!pricePerKg ? ', pricePerKg' : ''}${!stockKg ? ', stockKg' : ''}`.slice(1)
       });
     }
@@ -109,6 +149,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       unit,
       pricePerKg: parseFloat(pricePerKg),
       stockKg: parseFloat(stockKg),
+      lowStockThreshold: parseFloat(lowStockThreshold || 10),
       description: description.trim(),
       location: location.trim(),
     };
@@ -138,13 +179,14 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    const { name, category, unit, pricePerKg, stockKg, description, location } = req.body;
+    const { name, category, unit, pricePerKg, stockKg, lowStockThreshold, description, location } = req.body;
 
     if (name !== undefined) product.name = name.trim();
     if (category !== undefined) product.category = category || 'general';
     if (unit !== undefined) product.unit = unit || 'kg';
     if (pricePerKg !== undefined) product.pricePerKg = parseFloat(pricePerKg);
     if (stockKg !== undefined) product.stockKg = parseFloat(stockKg);
+    if (lowStockThreshold !== undefined) product.lowStockThreshold = parseFloat(lowStockThreshold);
     if (description !== undefined) product.description = description.trim();
     if (location !== undefined) product.location = location.trim();
 

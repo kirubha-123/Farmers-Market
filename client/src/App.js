@@ -14,7 +14,7 @@ import FarmerDashboard from './pages/FarmerDashboard';
 import FarmerProfile from './pages/FarmerProfile';
 import ProductDetail from './ProductDetail';
 
-import AIAssistant from './components/AIAssistant';
+import VoiceUI from './components/VoiceUI';
 
 function App() {
   return (
@@ -48,8 +48,8 @@ function App() {
         <Route path="/product/:productId" element={<ProductDetail />} />
       </Routes>
 
-      {/* 🚀 Global AI Assistant */}
-      <AIAssistant />
+      {/* 🚀 Global AgriForge Voice UI */}
+      <VoiceUI />
     </div>
   );
 }

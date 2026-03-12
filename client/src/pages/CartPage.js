@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { api } from '../api';
 
 function CartPage() {
   const [items, setItems] = useState([]);
@@ -17,11 +18,17 @@ function CartPage() {
   };
 
   const changeQty = (id, delta) => {
-    const next = items.map((it) =>
-      it._id === id
-        ? { ...it, quantityKg: Math.max(1, it.quantityKg + delta) }
-        : it
-    );
+    const next = items.map((it) => {
+      if (it._id === id) {
+        const newQty = Math.max(1, it.quantityKg + delta);
+        if (delta > 0 && newQty > (it.stockKg || 9999)) {
+          alert(`Sorry, only ${it.stockKg} kg available.`);
+          return it;
+        }
+        return { ...it, quantityKg: newQty };
+      }
+      return it;
+    });
     updateItems(next);
   };
 
@@ -37,7 +44,7 @@ function CartPage() {
   const delivery = items.length ? 50 : 0;
   const total = subtotal + delivery;
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
     if (!items.length) return;
 
     const addressInput = document.getElementById('delivery-address');
@@ -47,23 +54,38 @@ function CartPage() {
       return;
     }
 
-    const order = {
-      id: Date.now(),
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      items,
-      total,
-      address,
-    };
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please login to place an order');
+        navigate('/login');
+        return;
+      }
 
-    const stored = localStorage.getItem('orders');
-    const current = stored ? JSON.parse(stored) : [];
-    current.push(order);
-    localStorage.setItem('orders', JSON.stringify(current));
+      const orderPayload = {
+        items: items.map(it => ({
+          productId: it._id,
+          name: it.name,
+          quantityKg: it.quantityKg,
+          pricePerKg: it.pricePerKg
+        })),
+        totalAmount: total,
+        address
+      };
 
-    localStorage.removeItem('cart');
-    setItems([]);
-    navigate('/orders');
+      // REAL BACKEND INTEGRATION - THIS WILL TRIGGER ATOMIC STOCK REDUCTION
+      await api.post('/orders', orderPayload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      localStorage.removeItem('cart');
+      setItems([]);
+      alert("Order placed successfully! Stock has been updated.");
+      navigate('/orders');
+    } catch (err) {
+      console.error('Checkout error:', err);
+      alert(err.response?.data?.message || 'Failed to place order');
+    }
   };
 
   return (

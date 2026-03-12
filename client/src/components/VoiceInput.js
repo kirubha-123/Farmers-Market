@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { Mic, MicOff, Sparkles, AlertCircle } from 'lucide-react';
 
 const VoiceInput = ({
   onSmartFill,
-  label = 'Smart Fill',
-  language = 'ta-IN' // Tamil
+  label = 'AI Assistant',
+  language = 'ta-IN'
 }) => {
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState(null);
@@ -20,49 +21,40 @@ const VoiceInput = ({
     }
   }, []);
 
-  // 🚀 AI-LEVEL TAMIL → GRAMMATICAL ENGLISH PARSER
+  // 🚀 MISSION CRITICAL: TAMIL → ENGLISH SMART PARSER
   const parseTamilFarmerSpeech = useCallback((rawText) => {
     const text = rawText.toLowerCase().trim();
 
-    // Tamil Phonetic + Script → English Dictionary (Expanded)
     const tamilProducts = {
       'urulaikizhangu': 'Potato', 'உருளைக்கிழங்கு': 'Potato', 'urulai': 'Potato', 'potato': 'Potato',
       'thakkali': 'Tomato', 'தக்காளி': 'Tomato', 'tomato': 'Tomato',
       'vengayam': 'Onion', 'வெங்காயம்': 'Onion', 'onion': 'Onion',
-      'kathirikkai': 'Brinjal', 'கத்தரிக்காய்': 'Brinjal', 'brinjal': 'Brinjal', 'eggplant': 'Brinjal',
-      'murungakkai': 'Drumstick', 'முருங்கைக்காய்': 'Drumstick', 'drumstick': 'Drumstick',
-      'vendakkai': "Lady's Finger", 'வெண்டைக்காய்': "Lady's Finger", 'okra': "Lady's Finger",
-      'kothamalli': 'Coriander', 'கொத்தமல்லி': 'Coriander', 'coriander': 'Coriander',
-      'arisi': 'Rice', 'அரிசி': 'Rice', 'rice': 'Rice',
-      'godhuma': 'Wheat', 'கோதுமை': 'Wheat', 'wheat': 'Wheat',
-      'maampazham': 'Mango', 'மாம்பழம்': 'Mango', 'mango': 'Mango',
-      'vaazhai': 'Banana', 'வாழைப்பழம்': 'Banana', 'banana': 'Banana',
+      'kathirikkai': 'Brinjal', 'கத்தரிக்காய்': 'Brinjal', 'brinjal': 'Brinjal',
+      'murungakkai': 'Drumstick', 'முருங்கைக்காய்': 'Drumstick',
+      'vendakkai': "Lady's Finger", 'வெண்டைக்காய்': "Lady's Finger",
+      'arisi': 'Rice', 'அரிசி': 'Rice',
+      'godhuma': 'Wheat', 'கோதுமை': 'Wheat',
+      'maampazham': 'Mango', 'மாம்பழம்': 'Mango',
+      'vaazhai': 'Banana', 'வாழைப்பழம்': 'Banana',
       'carrot': 'Carrot', 'கேரட்': 'Carrot',
       'beans': 'Beans', 'பீன்ஸ்': 'Beans',
-      'appil': 'Apple', 'ஆப்பிள்': 'Apple', 'apple': 'Apple'
+      'appil': 'Apple', 'ஆப்பிள்': 'Apple'
     };
 
     const categories = {
-      'kaaykari': 'vegetables', 'காய்கறி': 'vegetables', 'vegetable': 'vegetables',
-      'pazham': 'fruits', 'பழம்': 'fruits', 'fruit': 'fruits',
-      'thaniyam': 'grains', 'தானியம்': 'grains', 'grain': 'grains'
+      'kaaykari': 'vegetables', 'காய்கறி': 'vegetables',
+      'pazham': 'fruits', 'பழம்': 'fruits',
+      'thaniyam': 'grains', 'தானியம்': 'grains'
     };
 
     const locations = {
       'perambalur': 'Perambalur', 'பெரம்பலூர்': 'Perambalur',
       'trichy': 'Trichy', 'திருச்சி': 'Trichy',
       'chennai': 'Chennai', 'சென்னை': 'Chennai',
-      'madurai': 'Madurai', 'மதுரை': 'Madurai',
-      'salem': 'Salem', 'சேலம்': 'Salem'
+      'madurai': 'Madurai', 'மதுரை': 'Madurai'
     };
 
-    const units = {
-      'kilo': 'kg', 'கிலோ': 'kg', 'kg': 'kg',
-      'gram': 'gram', 'கிராம்': 'gram',
-      'liter': 'liter', 'லிட்டர்': 'liter'
-    };
-
-    // GRAMMAR INTELLIGENCE - Extract numbers
+    // Extract numbers (Price/Stock)
     const numbers = text.match(/(\d+(?:\.\d+)?)/g) || [];
     const price = numbers[0] || '';
     const stock = numbers[1] || '';
@@ -70,126 +62,106 @@ const VoiceInput = ({
     let productName = '';
     let category = '';
     let location = '';
-    let unit = 'kg';
 
-    // Smart Match Logic
     for (const [key, val] of Object.entries(tamilProducts)) {
       if (text.includes(key)) { productName = val; break; }
     }
-
     for (const [key, val] of Object.entries(categories)) {
       if (text.includes(key)) { category = val; break; }
     }
-
     for (const [key, val] of Object.entries(locations)) {
       if (text.includes(key)) { location = val; break; }
     }
 
-    for (const [key, val] of Object.entries(units)) {
-      if (text.includes(key)) { unit = val; break; }
-    }
-
-    // Auto-detect category if missing
     if (productName && !category) {
-      if (['Potato', 'Tomato', 'Onion', 'Brinjal', 'Drumstick', "Lady's Finger", 'Coriander', 'Carrot', 'Beans'].includes(productName)) category = 'vegetables';
+      if (['Potato', 'Tomato', 'Onion', 'Brinjal', 'Drumstick', "Lady's Finger", 'Carrot', 'Beans'].includes(productName)) category = 'vegetables';
       if (['Mango', 'Banana', 'Apple'].includes(productName)) category = 'fruits';
       if (['Rice', 'Wheat'].includes(productName)) category = 'grains';
     }
 
-    const smartData = {};
-    if (productName) smartData.name = productName;
-    if (category) smartData.category = category;
-    if (price) smartData.pricePerKg = price;
-    if (stock) smartData.stockKg = stock;
-    if (location) smartData.location = location;
-    if (unit) smartData.unit = unit;
-    if (text) smartData.description = `Harvested fresh ${productName} from ${location || 'local farms'}. Quality guaranteed.`;
+    const smartData = {
+      name: productName,
+      category: category,
+      pricePerKg: price,
+      stockKg: stock,
+      location: location,
+      description: productName ? `Harvested fresh ${productName} from ${location || 'local farms'}.` : ''
+    };
+
+    // Clean undefined
+    Object.keys(smartData).forEach(key => smartData[key] === undefined || smartData[key] === '' ? delete smartData[key] : null);
 
     return {
-      singleField: productName || rawText,
       smartData,
       confidence: Object.keys(smartData).length,
       rawText
     };
   }, []);
 
-  const startListening = useCallback(() => {
+  const startListening = () => {
     if (!hasSupport || isListening) return;
 
     try {
-      setError(null);
-      setIsListening(true);
-
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
+      recognition.lang = language;
+      recognition.interimResults = false;
 
-      recognition.lang = language; // ta-IN for Tamil
-      recognition.continuous = false;
-      recognition.interimResults = true;
+      setIsListening(true);
+      setError(null);
 
       recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0].transcript)
-          .join(' ');
-
+        const transcript = event.results[0][0].transcript;
         const parsed = parseTamilFarmerSpeech(transcript);
-
-        if (onSmartFill) {
-          onSmartFill(parsed);
-        }
-
+        onSmartFill(parsed);
         setIsListening(false);
       };
 
-      recognition.onerror = () => {
-        setIsListening(false);
-        setError('மைக் அனுமதி தரவும் (Allow microphone)');
-      };
-
+      recognition.onerror = () => setIsListening(false);
       recognition.onend = () => setIsListening(false);
       recognition.start();
+
     } catch (err) {
       setIsListening(false);
-      setError('Voice unavailable');
+      setError("Mic error");
     }
-  }, [hasSupport, isListening, language, parseTamilFarmerSpeech, onSmartFill]);
+  };
 
-  if (typeof window === 'undefined' || !hasSupport) return null;
+  if (!hasSupport) return null;
 
   return (
-    <div className="voice-ai-wrapper">
+    <div className="w-full flex flex-col items-center">
       <button
         onClick={startListening}
+        type="button"
         disabled={isListening}
         className={`
-          group relative p-4 rounded-2xl bg-gradient-to-r from-purple-600 to-emerald-600 
-          text-white font-bold text-lg shadow-2xl hover:shadow-purple-lg hover:scale-105
-          transition-all duration-300 border-4 border-purple-200 hover:border-purple-300
-          ${isListening ? 'animate-pulse ring-4 ring-purple-400' : 'hover:from-purple-700 hover:to-emerald-700'}
+          relative group w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 
+          text-white font-black text-xl shadow-xl hover:shadow-emerald-200 hover:scale-[1.02] 
+          transition-all duration-300 flex items-center justify-center gap-3 active:scale-95
+          ${isListening ? 'animate-pulse ring-4 ring-emerald-200' : ''}
         `}
-        title="Tamil AI Voice → Perfect English Forms"
       >
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-[10px] font-black px-3 py-1 rounded-full shadow-md uppercase tracking-widest border-2 border-white">
+          Magic ✨
+        </div>
+
         {isListening ? (
-          <>
-            <div className="absolute inset-0 bg-red-500/20 animate-ping rounded-2xl"></div>
-            <span className="relative flex items-center gap-2">
-              🎙️ AI Listening...
-            </span>
-          </>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-red-400 rounded-full animate-ping" />
+            🎙️ Listening Tamil...
+          </div>
         ) : (
           <>
+            <Sparkles size={24} className="group-hover:rotate-12 transition-transform" />
             🤖 AI Tamil Voice
-            <span className="absolute -top-3 -right-3 bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-purple-700 shadow-lg">
-              MAGIC ✨
-            </span>
           </>
         )}
       </button>
 
       {error && (
-        <div className="mt-3 p-3 bg-red-50 border-2 border-red-200 rounded-xl text-sm text-red-800 flex items-center gap-2">
-          <span>⚠️</span> {error}
-          <button onClick={() => setError(null)} className="ml-auto text-red-600 font-bold">×</button>
+        <div className="mt-4 flex items-center gap-2 text-red-500 text-xs font-bold animate-bounce">
+          <AlertCircle size={14} /> Allow mic to use voice fill!
         </div>
       )}
     </div>

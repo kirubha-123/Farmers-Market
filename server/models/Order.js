@@ -10,10 +10,11 @@ const orderSchema = new mongoose.Schema({
     pricePerKg: Number
   }],
   totalAmount: { type: Number, required: true },
-  status: { 
-    type: String, 
-    enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'], 
-    default: 'pending' 
+  deliveryAddress: { type: String },
+  status: {
+    type: String,
+    enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
+    default: 'pending'
   }
 }, { timestamps: true });
 

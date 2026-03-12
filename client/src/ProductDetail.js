@@ -29,24 +29,30 @@ function ProductDetail() {
   }, [productId, navigate]);
 
   const addToCart = () => {
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const existing = cart.find(item => item._id === product._id);
+    const inCart = existing ? existing.quantityKg : 0;
+
+    if (inCart + quantity > product.stockKg) {
+      alert(`Cannot add more. You already have ${inCart} in cart and current stock is ${product.stockKg}.`);
+      return;
+    }
+
     const cartItem = {
       _id: product._id,
       name: product.name,
       pricePerKg: product.pricePerKg,
       unit: product.unit,
       image: product.image,
-      quantityKg: quantity
+      quantityKg: inCart + quantity
     };
-    
-    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const existing = cart.find(item => item._id === product._id);
-    
+
     if (existing) {
-      existing.quantityKg += quantity;
+      existing.quantityKg = inCart + quantity;
     } else {
       cart.push(cartItem);
     }
-    
+
     localStorage.setItem('cart', JSON.stringify(cart));
     alert(`${quantity} ${product.name} added to cart!`);
   };
@@ -75,13 +81,13 @@ function ProductDetail() {
           {/* Image */}
           <div className="space-y-6">
             <div className="aspect-[4/3] bg-white rounded-2xl shadow-xl overflow-hidden">
-              <img 
-                src={`http://localhost:5000${product.image}`} 
+              <img
+                src={`http://localhost:5000${product.image}`}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
             {/* Farmer */}
             {product.farmer && (
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100">
@@ -116,13 +122,12 @@ function ProductDetail() {
                 <span className="text-4xl font-bold text-emerald-900">₹{product.pricePerKg}</span>
                 <span className="text-xl text-gray-500">per {product.unit}</span>
               </div>
-              
+
               <div className="flex items-center gap-4 mt-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                  product.stockKg < 10 ? 'bg-red-100 text-red-700' : 
-                  product.stockKg < 50 ? 'bg-yellow-100 text-yellow-700' : 
-                  'bg-emerald-100 text-emerald-700'
-                }`}>
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${product.stockKg < 10 ? 'bg-red-100 text-red-700' :
+                    product.stockKg < 50 ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-emerald-100 text-emerald-700'
+                  }`}>
                   Stock: {product.stockKg} {product.unit}
                 </span>
               </div>
@@ -132,7 +137,7 @@ function ProductDetail() {
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
               <label className="block text-sm font-semibold text-gray-700 mb-4">Quantity</label>
               <div className="flex items-center gap-4">
-                <button 
+                <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   className="w-14 h-14 bg-gray-100 hover:bg-gray-200 rounded-2xl flex items-center justify-center text-2xl font-bold transition-all"
                 >
@@ -141,7 +146,7 @@ function ProductDetail() {
                 <span className="text-3xl font-bold text-emerald-900 w-24 text-center">
                   {quantity} {product.unit}
                 </span>
-                <button 
+                <button
                   onClick={() => setQuantity(Math.min(product.stockKg, quantity + 1))}
                   className="w-14 h-14 bg-emerald-100 hover:bg-emerald-200 rounded-2xl flex items-center justify-center text-2xl font-bold text-emerald-700 transition-all"
                 >
@@ -167,7 +172,7 @@ function ProductDetail() {
           </div>
         </div>
       </main>
-      
+
       {/* Footer - Safe conditional render */}
       {Footer && <Footer />}
     </div>
