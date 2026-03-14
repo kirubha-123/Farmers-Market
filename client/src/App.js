@@ -16,6 +16,8 @@ import ProductDetail from './ProductDetail';
 
 import VoiceUI from './components/VoiceUI';
 import AiPriceAdvisor from './pages/AiPriceAdvisor';
+import AiCropHealth from './pages/AiCropHealth';
+import AgriDoctor from './pages/AgriDoctor';
 function App() {
   return (
     <div className="min-h-screen">
@@ -49,6 +51,12 @@ function App() {
 
         {/* AI Price Advisor */}
         <Route path="/ai-price" element={<AiPriceAdvisor />} />
+
+        {/* AI Crop Health Advisor */}
+        <Route path="/ai-crop-health" element={<AiCropHealth />} />
+
+        {/* Advanced AI Doctor Discussion Portal */}
+        <Route path="/agri-doctor" element={<AgriDoctor />} />
       </Routes>
 
       {/* 🚀 Global AgriForge Voice UI */}

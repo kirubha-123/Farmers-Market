@@ -1,0 +1,318 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+.crop-health-container {
+    min-height: 100vh;
+    padding: 2rem;
+    background: #f0f7f4;
+    color: #333;
+    font-family: 'Outfit', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.discovery-header {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    padding: 8px 16px;
+    border-radius: 100px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2rem;
+    font-size: 11px;
+    font-weight: 800;
+    color: #065f46;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: p-pulse 1.5s infinite;
+}
+
+@keyframes p-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.health-card {
+    background: white;
+    border-radius: 40px;
+    padding: 3rem;
+    width: 100%;
+    max-width: 800px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.health-primary-actions {
+    margin-bottom: 2rem;
+}
+
+.health-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #064e3b;
+    margin-bottom: 0.5rem;
+}
+
+.health-header p {
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    border: 1px solid #f3f4f6;
+    border-radius: 20px;
+    background: white;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: 800;
+    font-size: 12px;
+}
+
+.action-btn:hover {
+    background: #f9fafb;
+    border-color: #10b981;
+    transform: translateY(-5px);
+}
+
+.action-btn.mic { background: #10b981; color: white; border: none; }
+.action-btn.mic:hover { background: #059669; }
+
+.weather-context {
+    background: #f8fafc;
+    border-radius: 20px;
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    font-weight: 800;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.w-item { display: flex; align-items: center; gap: 8px; }
+.w-item.location { color: #10b981; }
+
+.mic-shortcut {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.mic-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    border: none;
+    margin-bottom: 10px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.mic-circle.active {
+    background: #ef4444;
+    color: white;
+    animation: shake 0.5s infinite;
+}
+
+.pro-report {
+    background: #f0fdf4;
+    border: 1px solid #dcfce7;
+    border-radius: 30px;
+    padding: 2.5rem;
+    animation: slideUp 0.5s ease;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.report-badge {
+    background: #10b981;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 1.5rem;
+}
+
+.report-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.crop-badge {
+    background: white;
+    border: 1px solid #dcfce7;
+    padding: 5px 15px;
+    border-radius: 12px;
+    font-weight: 800;
+    color: #065f46;
+}
+
+.lang-toggle {
+    display: flex;
+    background: white;
+    border: 1px solid #eee;
+    padding: 4px;
+    border-radius: 100px;
+}
+
+.lang-toggle button {
+    border: none;
+    background: none;
+    padding: 5px 15px;
+    border-radius: 100px;
+    font-weight: 800;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.lang-toggle button.active {
+    background: #064e3b;
+    color: white;
+}
+
+.main-diagnosis h3 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #064e3b;
+    margin-bottom: 1rem;
+}
+
+.conf-bar {
+    height: 8px;
+    background: #dcfce7;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.conf-bar .fill {
+    height: 100%;
+    background: #10b981;
+    transition: 1s width;
+}
+
+.treatment-checklist {
+    margin-top: 2rem;
+}
+
+.treatment-checklist h4 {
+    font-weight: 800;
+    color: #065f46;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.check-item {
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.local-remedy-box {
+    margin-top: 2rem;
+    background: #fffbeb;
+    border: 1px solid #fef3c7;
+    padding: 20px;
+    border-radius: 20px;
+    display: flex;
+    gap: 15px;
+}
+
+.local-remedy-box strong { color: #92400e; display: block; margin-bottom: 5px; }
+.local-remedy-box p { font-size: 13px; color: #b45309; font-weight: 600; }
+
+.history-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 320px;
+    height: 100%;
+    background: white;
+    box-shadow: -10px 0 50px rgba(0,0,0,0.05);
+    z-index: 10;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.history-scroll {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.h-item {
+    border-bottom: 1px solid #f3f4f6;
+    padding: 15px 0;
+}
+
+.h-top { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
+.h-top span { color: #999; }
+
+.portal-btn {
+    display: block;
+    width: 100%;
+    background: #064e3b;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-weight: 800;
+    margin-top: 2rem;
+}
+
+.advanced-loader {
+    text-align: center;
+    padding: 2rem;
+}
+
+.orbit {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #10b981;
+    border-top-color: transparent;
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    animation: orb 1s infinite linear;
+}
+
+@keyframes orb { to { transform: rotate(360deg); } }

@@ -52,6 +52,18 @@ function Navbar() {
             Farmers
           </button>
           <button
+            className={linkClass('/agri-doctor')}
+            onClick={() => navigate('/agri-doctor')}
+          >
+            Agri-Doctor
+          </button>
+          <button
+            className={linkClass('/ai-price')}
+            onClick={() => navigate('/ai-price')}
+          >
+            Market Rates
+          </button>
+          <button
             className={linkClass('/about')}
             onClick={() => navigate('/about')}
           >

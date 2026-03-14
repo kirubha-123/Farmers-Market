@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import VoiceInput from '../components/VoiceInput';
 import { api } from '../api';
@@ -357,6 +358,40 @@ function FarmerDashboard() {
             <p className="text-2xl font-bold text-emerald-900">{stats.activeOrders}</p>
           </div>
         </div>
+
+        {/* AI Services Section (SEPARATE SCREENS) */}
+        <section className="mb-10">
+          <h2 className="text-lg font-black text-emerald-900 mb-5 flex items-center gap-2">
+            <Sparkles className="text-emerald-600" size={20} /> AI Farmer Services
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Doctor Card */}
+            <Link to="/agri-doctor" className="group">
+              <div className="bg-gradient-to-br from-teal-500 to-emerald-700 p-6 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden h-40 flex items-center">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full translate-x-10 -translate-y-10 group-hover:scale-110 transition-transform"></div>
+                <div className="relative z-10">
+                  <span className="bg-white/20 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Medical Portal</span>
+                  <h3 className="text-2xl font-black text-white mt-2">Agri-Doctor Consultation</h3>
+                  <p className="text-teal-50 text-xs mt-1">Talk to our AI expert about crop diseases.</p>
+                </div>
+                <div className="absolute right-8 text-6xl opacity-20 group-hover:opacity-40 transition-opacity">🩺</div>
+              </div>
+            </Link>
+
+            {/* Price Advisor Card */}
+            <Link to="/ai-price" className="group">
+              <div className="bg-gradient-to-br from-indigo-600 to-blue-800 p-6 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden h-40 flex items-center">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full translate-x-10 -translate-y-10 group-hover:scale-110 transition-transform"></div>
+                <div className="relative z-10">
+                  <span className="bg-white/20 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Market Analysis</span>
+                  <h3 className="text-2xl font-black text-white mt-2">AI Price Predictions</h3>
+                  <p className="text-indigo-50 text-xs mt-1">Real-time market rates & selling advice.</p>
+                </div>
+                <div className="absolute right-8 text-6xl opacity-20 group-hover:opacity-40 transition-opacity">📈</div>
+              </div>
+            </Link>
+          </div>
+        </section>
 
         {/* Products Grid */}
         <section className="mb-8">

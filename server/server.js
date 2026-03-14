@@ -39,6 +39,7 @@ app.use('/api/logistics', logisticsRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/ai-price', require('./routes/aiPrice'));
+app.use('/api/ai-crop-health', require('./routes/aiCropHealth'));
 
 // Error handling middleware (LAST)
 app.use((err, req, res, next) => {

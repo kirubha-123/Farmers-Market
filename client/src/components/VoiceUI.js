@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Volume2, TrendingUp, Truck, CreditCard, X, Sparkles, ChevronRight, Activity, ArrowUpRight, MapPin, Calendar, Loader2, Phone, Fingerprint, User, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Mic, MicOff, Volume2, TrendingUp, Truck, CreditCard, X, Sparkles, ChevronRight, Activity, ArrowUpRight, MapPin, Calendar, Loader2, Phone, Fingerprint, User, ArrowLeft, ExternalLink } from 'lucide-react';
 import { useVoice } from './VoiceContext';
 import axios from 'axios';
 
 const VoiceUI = () => {
+    const navigate = useNavigate();
     const {
         transcript,
         isListening,
@@ -22,6 +24,7 @@ const VoiceUI = () => {
     const [loading, setLoading] = useState(false);
     const [isSilentMode, setIsSilentMode] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState(null);
+    const [healthResult, setHealthResult] = useState(null);
     const lastProcessedRef = useRef('');
 
     // 🚀 EXPANDED DICTIONARIES
@@ -190,7 +193,35 @@ const VoiceUI = () => {
                 return;
             }
 
-            // 2. Price Predictions
+            // 3. Health Diagnosis Logic
+            const healthKeywords = ['leaf', 'yellow', 'spot', 'disease', 'health', 'medicine', 'மருந்து', 'நோய்', 'இலை', 'மஞ்சள்', 'பூச்சி', 'கருகல்'];
+            const isHealthRequest = healthKeywords.some(kw => text.includes(kw));
+
+            if (isHealthRequest) {
+                try {
+                    const res = await axios.post('http://localhost:5000/api/ai-crop-health/answer', {
+                        queryText: transcript
+                    });
+                    
+                    setLogistics([]);
+                    setPredictions([]);
+                    setHealthResult(res.data);
+                    
+                    if (language === 'ta-IN') {
+                        speak(`உங்கள் ${res.data.crop} பற்றிய மருத்துவ அறிக்கை தயார். இது ${res.data.diagnosisTa} ஆக இருக்கலாம்.`);
+                    } else {
+                        speak(`Health report for your ${res.data.crop} is ready. It might be ${res.data.diagnosisEn}.`);
+                    }
+                } catch (err) {
+                    speak("Doctor service is currently busy.");
+                } finally {
+                    setLoading(false);
+                    resetTranscript();
+                }
+                return;
+            }
+
+            // 4. Price Predictions
             let detectedCrops = [];
             for (const [key, val] of Object.entries(cropDict)) {
                 if (text.includes(key)) {
@@ -294,7 +325,10 @@ const VoiceUI = () => {
                             /* MAIN HUD VIEW */
                             <>
                                 <div className="bg-emerald-600 p-5 text-white flex justify-between items-center shrink-0">
-                                    <span className="font-black text-lg flex items-center gap-2 tracking-tighter uppercase"><Activity size={18} /> AgriForge Real-Time</span>
+                                    <span className="font-black text-lg flex items-center gap-2 tracking-tighter uppercase">
+                                        <Activity size={18} /> AgriForge Real-Time
+                                        {healthResult && <span className="bg-white text-emerald-600 text-[8px] px-2 py-0.5 rounded-full animate-bounce">DOCTOR MODE</span>}
+                                    </span>
                                     <div className="flex gap-2">
                                         <button onClick={() => setLanguage('ta-IN')} className={`text-[10px] p-2 rounded-lg font-bold ${language === 'ta-IN' ? 'bg-white text-emerald-600' : 'bg-emerald-700'}`}>தமிழ்</button>
                                         <button onClick={() => setLanguage('en-US')} className={`text-[10px] p-2 rounded-lg font-bold ${language === 'en-US' ? 'bg-white text-emerald-600' : 'bg-emerald-700'}`}>EN</button>
@@ -326,6 +360,34 @@ const VoiceUI = () => {
                                     </div>
 
                                     <div className="space-y-4">
+                                        {/* HEALTH DIAGNOSIS */}
+                                        {healthResult && (
+                                            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-teal-50 p-5 rounded-[2rem] border-2 border-teal-200 shadow-sm relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 w-16 h-16 bg-teal-100 flex items-center justify-center rounded-bl-3xl">
+                                                    <Activity className="text-teal-600" size={24} />
+                                                </div>
+                                                <div className="mb-4">
+                                                    <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest">Digital Diagnosis</p>
+                                                    <h3 className="text-xl font-black text-gray-900">{healthResult.crop} Health</h3>
+                                                </div>
+                                                
+                                                <div className="p-3 bg-white rounded-2xl mb-3 border border-teal-100">
+                                                    <p className="text-xs font-bold text-teal-800">
+                                                        {language === 'ta-IN' ? healthResult.diagnosisTa : healthResult.diagnosisEn}
+                                                    </p>
+                                                </div>
+
+                                                <button 
+                                                    onClick={() => { navigate('/agri-doctor'); setShowUI(false); }}
+                                                    className="w-full bg-teal-600 text-white py-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 hover:bg-teal-700 transition-all mb-2"
+                                                >
+                                                    OPEN DOCTOR PORTAL <ExternalLink size={14} />
+                                                </button>
+                                                
+                                                <button onClick={() => setHealthResult(null)} className="w-full text-[10px] font-black text-teal-600 uppercase py-1 hover:bg-teal-100 rounded-lg transition-colors">Close</button>
+                                            </motion.div>
+                                        )}
+
                                         {/* REAL PREDICTIONS */}
                                         {predictions.map((p, i) => (
                                             <motion.div key={i} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white p-5 rounded-[2rem] border-2 border-emerald-50 shadow-sm">
@@ -345,9 +407,15 @@ const VoiceUI = () => {
                                                         <p className="text-3xl font-black text-emerald-600 tracking-tighter">₹{p.predictedPrice}</p>
                                                     </div>
                                                 </div>
-                                                <div className="p-3 bg-gray-50 rounded-2xl text-[11px] font-bold text-gray-500 italic">
+                                                <div className="p-3 bg-gray-50 rounded-2xl text-[11px] font-bold text-gray-500 italic mb-3">
                                                     "{p.recommendation}"
                                                 </div>
+                                                <button 
+                                                    onClick={() => { navigate('/ai-price'); setShowUI(false); }}
+                                                    className="w-full bg-emerald-100 text-emerald-700 py-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 hover:bg-emerald-200 transition-all"
+                                                >
+                                                    VIEW FULL PRICE ANALYSIS <ExternalLink size={12} />
+                                                </button>
                                             </motion.div>
                                         ))}
 
