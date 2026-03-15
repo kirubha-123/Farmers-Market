@@ -180,6 +180,31 @@
   border-bottom-right-radius: 0;
 }
 
+.msg-image-container {
+  width: 100%;
+  margin-bottom: 12px;
+  border-radius: 15px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.msg-preview-image {
+  width: 100%;
+  max-width: 400px;
+  display: block;
+}
+
+.msg-text {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.medical-report.analysis {
+  border-style: solid;
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+}
+
 .medical-report {
   margin-top: 1rem;
   background: #f1f8e9;
@@ -251,6 +276,65 @@
 .send-btn {
   background: var(--doc-primary);
   color: white;
+}
+
+.upload-btn {
+  background: var(--doc-bg);
+  color: var(--doc-secondary);
+  font-size: 1.2rem;
+}
+
+.image-preview-bubble {
+  position: absolute;
+  bottom: 110px;
+  left: 20px;
+  background: white;
+  padding: 10px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid #eee;
+  z-index: 100;
+  animation: slideUp 0.3s ease-out;
+}
+
+.image-preview-bubble img {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.clear-preview {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: #ff5252;
+  color: white;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.analyze-btn {
+  background: var(--doc-primary);
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 /* Right Widgets */

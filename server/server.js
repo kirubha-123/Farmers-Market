@@ -10,6 +10,7 @@ dotenv.config();
 console.log('=== 🚀 ENV DEBUG ===');
 console.log('MONGODB_URI:', process.env.MONGODB_URI ? '✅' : '❌');
 console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '✅' : '❌');
+console.log('HF_TOKEN:', process.env.HF_TOKEN ? '✅' : '❌');
 console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅' : '❌');
 console.log('NODE_ENV:', process.env.NODE_ENV || 'dev');
 console.log('PORT:', process.env.PORT || 5000);
@@ -19,6 +20,7 @@ const app = express();
 // 2. PRODUCTION MIDDLEWARE
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 3. HEALTH CHECK
@@ -35,6 +37,7 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/ai-price', require('./routes/aiPrice'));
 app.use('/api/ai-crop-health', require('./routes/aiCropHealth'));
+app.use('/api/disease', require('./routes/diseaseRoutes'));
 
 // 5. ERROR HANDLING
 app.use((err, req, res, next) => {
@@ -61,4 +64,5 @@ mongoose.connect(process.env.MONGODB_URI || '', {
 app.listen(PORT, () => {
   console.log(`🚀 Farmers Market Backend LIVE on port ${PORT}`);
   console.log(`✅ Health Check: http://localhost:${PORT}/api/health`);
+  console.log('🌱 AI Plant Disease Detection API Ready');
 });

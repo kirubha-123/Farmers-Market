@@ -15,6 +15,9 @@ const AgriDoctor = () => {
     const [severity, setSeverity] = useState(20);
     const [loading, setLoading] = useState(false);
     const [loadingStatus, setLoadingStatus] = useState("Consulting AI...");
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const [detectionResult, setDetectionResult] = useState(null);
 
     const recognitionRef = useRef(null);
     const scrollRef = useRef(null);
@@ -85,6 +88,64 @@ const AgriDoctor = () => {
         }
     };
 
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedImage(file);
+            setImagePreview(URL.createObjectURL(file));
+            setDetectionResult(null);
+        }
+    };
+
+    const analyzeCrop = async () => {
+        if (!selectedImage) return;
+
+        setLoading(true);
+        setLoadingStatus("🔍 AI analyzing crop image...");
+        console.log("Uploading image:", selectedImage);
+
+        const formData = new FormData();
+        formData.append("image", selectedImage);
+
+        try {
+            const res = await axios.post('http://localhost:5000/api/disease/detect', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            
+            const result = res.data; // Now contains { disease, confidence }
+            
+            // Add to chat as an AI response
+            const aiMsg = {
+                role: 'ai',
+                text: `Crop analysis complete. I've detected symptoms of ${result.disease.replace(/___/g, ' ').replace(/_/g, ' ')}.`,
+                isAnalysis: true,
+                analysisData: result,
+                preview: imagePreview
+            };
+            setMessages(prev => [...prev, aiMsg]);
+            
+            // Add to history
+            const [crop, diagnosis] = result.disease.split('___');
+            setHistory(prev => [{ 
+                crop: crop || 'Plant', 
+                diagnosis: diagnosis?.replace(/_/g, ' ') || 'Condition Detected', 
+                date: 'Just Now' 
+            }, ...prev]);
+
+        } catch (err) {
+            console.error("Detection error:", err);
+            const errorMessage = err.response?.data?.message || err.message || 'Unknown Error';
+            setMessages(prev => [...prev, { 
+                role: 'ai', 
+                text: `மன்னிக்கவும், படத்தைப் பகுப்பாய்வு செய்வதில் பிழை ஏற்பட்டது: ${errorMessage}` 
+            }]);
+        } finally {
+            setLoading(false);
+            setSelectedImage(null);
+            setImagePreview(null);
+        }
+    };
+
     const toggleListening = () => {
         if (isListening) {
             recognitionRef.current.stop();
@@ -134,7 +195,26 @@ const AgriDoctor = () => {
                     <div className="chat-messages">
                         {messages.map((m, i) => (
                             <div key={i} className={`msg ${m.role}`}>
-                                {m.text}
+                                {m.preview && (
+                                    <div className="msg-image-container">
+                                        <img src={m.preview} alt="Analyzed Crop" className="msg-preview-image" />
+                                    </div>
+                                )}
+                                <div className="msg-text">{m.text}</div>
+                                {m.isAnalysis && m.analysisData && (
+                                    <div className="medical-report analysis">
+                                        <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
+                                            <span className="severity-tag high">AI DIAGNOSIS</span>
+                                            <span style={{fontSize: '11px', fontWeight: 'bold', color: '#10b981'}}>
+                                                CONFIDENCE: {(m.analysisData.confidence * 100).toFixed(1)}%
+                                            </span>
+                                        </div>
+                                        <p><strong>🩺 Detected: {m.analysisData.disease.replace(/___/g, ' ').replace(/_/g, ' ')}</strong></p>
+                                        <p style={{fontSize: '11px', color: '#666', marginTop: '10px'}}>
+                                            Based on visual symptoms identified by our neural networks. Please consult a physical specialist for severe outbreaks.
+                                        </p>
+                                    </div>
+                                )}
                                 {m.report && (
                                     <div className="medical-report">
                                         <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
@@ -168,6 +248,17 @@ const AgriDoctor = () => {
                     </div>
 
                     <div className="chat-input-area">
+                        {imagePreview && (
+                            <div className="image-preview-bubble">
+                                <img src={imagePreview} alt="Preview" />
+                                <button className="clear-preview" onClick={() => {setImagePreview(null); setSelectedImage(null);}}>✕</button>
+                                <button className="analyze-btn" onClick={analyzeCrop}>Analyze Crop</button>
+                            </div>
+                        )}
+                        <label className="doc-btn upload-btn">
+                            📷
+                            <input type="file" accept="image/*" onChange={handleImageChange} style={{display: 'none'}} />
+                        </label>
                         <button className={`doc-btn mic-btn ${isListening ? 'active' : ''}`} onClick={toggleListening}>
                             {isListening ? '⏹️' : '🎤'}
                         </button>
