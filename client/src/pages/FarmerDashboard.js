@@ -390,6 +390,19 @@ function FarmerDashboard() {
                 <div className="absolute right-8 text-6xl opacity-20 group-hover:opacity-40 transition-opacity">📈</div>
               </div>
             </Link>
+
+            {/* Direct Messages Card */}
+            <Link to="/messages" className="group sm:col-span-2">
+              <div className="bg-gradient-to-br from-amber-500 to-orange-700 p-6 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden h-40 flex items-center">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full translate-x-10 -translate-y-10 group-hover:scale-110 transition-transform"></div>
+                <div className="relative z-10">
+                  <span className="bg-white/20 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Communication</span>
+                  <h3 className="text-2xl font-black text-white mt-2">Direct Messages</h3>
+                  <p className="text-amber-50 text-xs mt-1">Chat directly with buyers who are interested in your products.</p>
+                </div>
+                <div className="absolute right-8 text-6xl opacity-20 group-hover:opacity-40 transition-opacity">💬</div>
+              </div>
+            </Link>
           </div>
         </section>
 

@@ -1,44 +1,6 @@
 const axios = require("axios");
 const fs = require("fs");
-
-// Comprehensive Disease Solution Database
-const DISEASE_DATABASE = {
-  "Tomato___Early_blight": {
-    label: "Tomato Early Blight",
-    symptoms: "Dark spots with concentric rings on older leaves.",
-    treatment: "Apply copper-based fungicides. Remove infected lower leaves.",
-    prevention: "Rotate crops every 3 years. Avoid overhead watering.",
-    confidence: 0.92
-  },
-  "Rice___Leaf_Blast": {
-    label: "Rice Leaf Blast",
-    symptoms: "Spindle-shaped spots with gray centers on leaves.",
-    treatment: "Apply Tricyclazole or Carbendazim. Maintain proper water levels.",
-    prevention: "Use resistant varieties. Avoid excessive Nitrogen fertilizer.",
-    confidence: 0.88
-  },
-  "Potato___Late_blight": {
-    label: "Potato Late Blight",
-    symptoms: "Water-soaked dark patches that turn brown and papery.",
-    treatment: "Apply Mancozeb or Chlorothalonil. Remove 'cull' piles.",
-    prevention: "Plant certified disease-free tubers. Ensure good soil drainage.",
-    confidence: 0.85
-  },
-  "Corn___Common_Rust": {
-    label: "Corn Common Rust",
-    symptoms: "Golden-brown to cinnamon-brown pustules on both leaf surfaces.",
-    treatment: "Foliar fungicides are rarely needed unless infection is severe.",
-    prevention: "Plant resistant hybrids. Manage crop residue.",
-    confidence: 0.94
-  },
-  "Tomato___Healthy": {
-    label: "Tomato Healthy",
-    symptoms: "Lush green leaves with no visible lesions or discoloration.",
-    treatment: "No treatment needed. Continue regular monitoring.",
-    prevention: "Maintain consistent watering and nutrient supply.",
-    confidence: 0.98
-  }
-};
+const { getDiseaseInfo } = require("../data/diseaseDatabase");
 
 /**
  * Detects plant disease and provides solutions.
@@ -98,19 +60,14 @@ async function detectPlantDisease(imagePath) {
       if (response.data && Array.isArray(response.data)) {
         console.log("✅ Real AI Response received");
         const topResult = response.data[0];
-        const dbEntry = DISEASE_DATABASE[topResult.label] || { 
-          label: topResult.label, 
-          treatment: "Please consult an agricultural specialist for a detailed treatment plan.",
-          prevention: "General hygiene and proper irrigation are recommended.",
-          symptoms: "Visible lesions on leaves."
-        };
+        const dbEntry = getDiseaseInfo(topResult.label);
 
         return {
-          disease: dbEntry.label,
+          disease: dbEntry.label || dbEntry.diagnosisEn,
           score: topResult.score,
-          treatment: dbEntry.treatment,
-          prevention: dbEntry.prevention,
-          symptoms: dbEntry.symptoms
+          treatment: dbEntry.treatmentEn || dbEntry.treatment,
+          prevention: dbEntry.preventionEn || dbEntry.prevention,
+          symptoms: dbEntry.symptoms || dbEntry.diagnosisEn
         };
       }
     } catch (error) {
@@ -118,24 +75,15 @@ async function detectPlantDisease(imagePath) {
     }
   }
 
-  // 3. STAGE 3: Smart Diagnosis Mode (Fallback)
-  const fileName = imagePath.toLowerCase();
-  let dbKey = "Tomato___Healthy"; // Default
-  
-  if (fileName.includes("tomato") && (fileName.includes("spot") || fileName.includes("blight"))) dbKey = "Tomato___Early_blight";
-  else if (fileName.includes("rice")) dbKey = "Rice___Leaf_Blast";
-  else if (fileName.includes("potato")) dbKey = "Potato___Late_blight";
-  else if (fileName.includes("corn") || fileName.includes("maize")) dbKey = "Corn___Common_Rust";
-
-  const result = DISEASE_DATABASE[dbKey];
-  console.log(`🛠️ Smart Diagnosis: ${result.label}`);
-  
+  // 3. STAGE 3: Smart Diagnosis Mode (Fallback — uses local disease DB)
+  console.log(`🛠️ Using local disease database fallback for image`);
+  const genericEntry = getDiseaseInfo('Unknown___Disease');
   return {
-    disease: result.label,
-    score: result.confidence,
-    treatment: result.treatment,
-    prevention: result.prevention,
-    symptoms: result.symptoms
+    disease: genericEntry.label || 'Disease Detected',
+    score: genericEntry.confidence_score || 0.6,
+    treatment: genericEntry.treatmentEn,
+    prevention: genericEntry.preventionEn,
+    symptoms: genericEntry.diagnosisEn
   };
 }
 

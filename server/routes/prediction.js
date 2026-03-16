@@ -1,36 +1,60 @@
 const express = require('express');
 const router = express.Router();
+const { getPricePrediction, CROP_DATA } = require('../data/cropPrices');
 const { Prediction } = require('../models/AgriModels');
 
-// AI Price Prediction Oracle
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/predictions/predict
+// Body: { crop, location }
+// Returns: real data-driven price prediction with seasonal trend
+// ─────────────────────────────────────────────────────────────────────────────
 router.post('/predict', async (req, res) => {
     const { crop, location } = req.body;
 
     try {
-        // Mocking ML logic: In a real scenario, this would call TensorFlow.js or a Python microservice
-        // Logic: 2025-2026 data trends (Rising due to festivals/weather)
-        const currentPrice = 45 + Math.random() * 10;
-        const trend = 1.15; // 15% increase predicted
-        const predictedPrice = currentPrice * trend;
+        const result = getPricePrediction(crop, location);
 
-        const prediction = new Prediction({
-            crop,
-            location,
-            currentPrice: currentPrice.toFixed(2),
-            predictedPrice: predictedPrice.toFixed(2),
-            recommendation: trend > 1.05 ? "Hold! Prices are expected to rise by 15% next Tuesday." : "Sell now, market is stable.",
-            historicalData: [
-                { date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), price: currentPrice - 5 },
-                { date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), price: currentPrice - 2 },
-                { date: new Date(), price: currentPrice }
-            ]
-        });
+        if (!result) {
+            // Crop not found in dataset — return graceful response
+            return res.status(404).json({
+                message: `No price data found for "${crop}". Available: ${Object.keys(CROP_DATA).join(', ')}`
+            });
+        }
 
-        await prediction.save();
-        res.status(200).json(prediction);
+        // Optionally persist to MongoDB
+        try {
+            await new Prediction({
+                crop:           result.crop,
+                location:       result.location,
+                currentPrice:   result.currentPrice,
+                predictedPrice: result.predictedPrice,
+                recommendation: result.recommendation,
+                historicalData: result.historicalData.map(h => ({
+                    date:  new Date(),
+                    price: h.price
+                }))
+            }).save();
+        } catch (dbErr) {
+            console.warn('Prediction DB save skipped:', dbErr.message);
+        }
+
+        res.status(200).json(result);
     } catch (err) {
-        res.status(500).json({ message: "Prediction failed", error: err.message });
+        console.error('Prediction error:', err.message);
+        res.status(500).json({ message: 'Prediction failed', error: err.message });
     }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/predictions/crops  — List all available crops
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/crops', (req, res) => {
+    const crops = Object.entries(CROP_DATA).map(([name, data]) => ({
+        name,
+        unit: data.unit,
+        trend: data.trend
+    }));
+    res.json({ crops });
 });
 
 module.exports = router;

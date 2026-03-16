@@ -5,26 +5,33 @@ import { api } from '../api';
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCounts, setUnreadCounts] = useState({ notifs: 0, messages: 0 });
   const token = localStorage.getItem('token');
 
   useEffect(() => {
     if (token) {
-      fetchUnreadCount();
-      const interval = setInterval(fetchUnreadCount, 30000); // Poll every 30s
+      fetchUnreadCounts();
+      const interval = setInterval(fetchUnreadCounts, 30000); // Poll every 30s
       return () => clearInterval(interval);
     }
   }, [token]);
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCounts = async () => {
     try {
-      const res = await api.get('/notifications', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const unread = res.data.filter(n => !n.read).length;
-      setUnreadCount(unread);
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const [notifRes, msgRes] = await Promise.all([
+        api.get('/notifications', { headers: { Authorization: `Bearer ${token}` } }),
+        api.get('/messages/unread/count', { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+
+      const notifUnread = notifRes.data.filter(n => !n.read).length;
+      const msgUnread = msgRes.data.count || 0;
+      
+      setUnreadCounts({ notifs: notifUnread, messages: msgUnread });
     } catch (err) {
-      console.error("Notif fetch error:", err);
+      console.error("Unread count fetch error:", err);
     }
   };
 
@@ -43,7 +50,7 @@ function Navbar() {
   };
 
   return (
-    <header className="border-b border-emerald-100 bg-white">
+    <header className="border-b border-emerald-100 bg-white sticky top-0 z-50">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
         {/* logo */}
         <div
@@ -87,54 +94,51 @@ function Navbar() {
           >
             Market Rates
           </button>
-          <button
-            className={linkClass('/about')}
-            onClick={() => navigate('/about')}
-          >
-            About
-          </button>
-          <button
-            className={linkClass('/contact')}
-            onClick={() => navigate('/contact')}
-          >
-            Contact
-          </button>
-          <button
-            className={linkClass('/profile')}
-            onClick={() => navigate('/profile')}
-          >
-            Profile
-          </button>
         </nav>
 
         {/* right icons + logout */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/cart')}
-            className="text-emerald-900/80 hover:text-emerald-900 text-sm"
-            title="Cart"
+            onClick={() => navigate('/messages')}
+            className="text-emerald-900/80 hover:text-emerald-900 text-xl relative"
+            title="Messages"
           >
-            🛒
+            💬
+            {unreadCounts.messages > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] h-4 w-4 flex items-center justify-center rounded-full animate-pulse border-2 border-white">
+                {unreadCounts.messages > 9 ? '9+' : unreadCounts.messages}
+              </span>
+            )}
           </button>
+
           <button
             onClick={() => {
               const role = localStorage.getItem('role');
               if (role === 'farmer') navigate('/farmer-orders');
               else navigate('/my-orders');
             }}
-            className="text-emerald-900/80 hover:text-emerald-900 text-sm relative"
-            title="Orders"
+            className="text-emerald-900/80 hover:text-emerald-900 text-xl relative"
+            title="Orders & Notifications"
           >
-            📦
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] h-3 w-3 flex items-center justify-center rounded-full animate-pulse">
-                {unreadCount > 9 ? '9+' : unreadCount}
+            🔔
+            {unreadCounts.notifs > 0 && (
+              <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[8px] h-4 w-4 flex items-center justify-center rounded-full animate-pulse border-2 border-white">
+                {unreadCounts.notifs > 9 ? '9+' : unreadCounts.notifs}
               </span>
             )}
           </button>
+
+          <button
+            onClick={() => navigate('/cart')}
+            className="text-emerald-900/80 hover:text-emerald-900 text-xl"
+            title="Cart"
+          >
+            🛒
+          </button>
+          
           <button
             onClick={handleLogout}
-            className="px-3 py-1.5 rounded-full border border-emerald-600 text-xs sm:text-sm text-emerald-800 hover:bg-emerald-600 hover:text-white"
+            className="hidden sm:block px-4 py-1.5 rounded-full bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm"
           >
             Logout
           </button>

@@ -122,4 +122,16 @@ router.put('/profile', auth, async (req, res) => {
   }
 });
 
+// ✅ GET /api/auth/user/:id - Get basic user info
+router.get('/user/:id', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('name role profilePic');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 module.exports = router;

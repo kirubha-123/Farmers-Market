@@ -24,6 +24,7 @@ const AgriDoctor = () => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const activeStreamRef = useRef(null);
+    const analyzingRef = useRef(false); // 🔒 prevents duplicate analysis calls
 
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -99,7 +100,8 @@ const AgriDoctor = () => {
     }, [isCameraOpen]);
 
     const sendMessage = async (text) => {
-        if (!text.trim()) return;
+        if (!text.trim() || analyzingRef.current) return;
+        analyzingRef.current = true;
 
         const userMsg = { role: 'user', text };
         setMessages(prev => [...prev, userMsg]);
@@ -107,39 +109,39 @@ const AgriDoctor = () => {
         setLoading(true);
 
         try {
-            // 🔍 GLOBAL DATA DISCOVERY SIMULATION
             setLoadingStatus("Connecting to Global Agri-Hub...");
-            await new Promise(r => setTimeout(r, 700));
-            setLoadingStatus("Fetching current regional trends...");
-            await new Promise(r => setTimeout(r, 700));
-            setLoadingStatus("Verifying Treatment Protocols...");
+            await new Promise(r => setTimeout(r, 600));
+            setLoadingStatus("Running AI Diagnosis...");
+            await new Promise(r => setTimeout(r, 600));
+            setLoadingStatus("Generating Treatment Protocol...");
 
             const res = await axios.post('http://localhost:5000/api/ai-crop-health/answer', { queryText: text });
             const data = res.data;
 
-            if (data.isAgri) {
-                const aiMsg = { 
-                    role: 'ai', 
-                    text: `உங்கள் ${data.detectedCrop} க்கான மருத்துவ அறிக்கை தயார். இது ${data.diagnosisTa} ஆக இருக்கலாம்.`,
-                    report: data
-                };
-                setMessages(prev => [...prev, aiMsg]);
-                
-                // Update widgets
-                if(data.severity === 'CRITICAL') setSeverity(95);
-                else if(data.severity === 'HIGH') setSeverity(75);
-                else if(data.severity === 'MODERATE') setSeverity(45);
-                else setSeverity(25);
+            // Always build a full AI report card if we have diagnosis data
+            const hasDiagnosis = data.crop || data.diagnosisEn || data.treatmentEn;
+            const aiMsg = {
+                role: 'ai',
+                text: hasDiagnosis
+                    ? `✅ Diagnosis complete for ${data.crop || 'your crop'}: ${data.diagnosisEn || ''}`
+                    : (data.diagnosisTa || 'Could not identify the issue.'),
+                report: hasDiagnosis ? data : null
+            };
+            setMessages(prev => [...prev, aiMsg]);
 
-                // Add to history
-                setHistory(prev => [{ crop: data.detectedCrop, diagnosis: data.diagnosisEn, date: 'Today' }, ...prev]);
-            } else {
-                setMessages(prev => [...prev, { role: 'ai', text: data.diagnosisTa }]);
+            // Severity widget
+            const conf = parseFloat(data.confidence_score || 0);
+            setSeverity(conf > 0.85 ? 90 : conf > 0.7 ? 60 : 35);
+
+            // Add to history
+            if (data.crop) {
+                setHistory(prev => [{ crop: data.crop, diagnosis: data.diagnosisEn || 'Unknown', date: 'Today' }, ...prev]);
             }
         } catch (err) {
-            setMessages(prev => [...prev, { role: 'ai', text: 'மன்னிக்கவும், என்னால் இப்போது பதிலளிக்க முடியவில்லை.' }]);
+            setMessages(prev => [...prev, { role: 'ai', text: 'மன்னிக்கவும், என்னால் இப்போது பதிலளிக்க முடியவில்லை. Server may be offline.' }]);
         } finally {
             setLoading(false);
+            analyzingRef.current = false; // 🔓 release lock
         }
     };
 
@@ -152,54 +154,71 @@ const AgriDoctor = () => {
     };
 
     const analyzeCrop = async () => {
-        if (!selectedImage) return;
+        // 🔒 Ref-based lock: immune to React Strict Mode double-invocation
+        if (!selectedImage || analyzingRef.current) return;
+        analyzingRef.current = true;
 
         setLoading(true);
-        setLoadingStatus("🔍 AI analyzing crop image...");
-        console.log("Uploading image:", selectedImage);
+        setLoadingStatus("📸 Reading image...");
 
-        const formData = new FormData();
-        formData.append("image", selectedImage);
+        const capturedPreview = imagePreview; // snapshot before clearing
 
         try {
-            const config = {
-                headers: { 
-                    'Content-Type': 'multipart/form-data',
+            // Convert image to base64 for OpenAI Vision
+            const reader = new FileReader();
+            const base64 = await new Promise((resolve, reject) => {
+                reader.onload = () => resolve(reader.result); // data:image/...;base64,...
+                reader.onerror = reject;
+                reader.readAsDataURL(selectedImage);
+            });
+
+            setLoadingStatus("🤖 Sending to AI Vision Doctor...");
+
+            // Use the OpenAI-powered crop health route (supports vision)
+            const res = await axios.post('http://localhost:5000/api/ai-crop-health/answer', {
+                queryText: 'Identify the crop disease in this image and provide detailed treatment and prevention steps.',
+                image: base64,
+                userId: JSON.parse(localStorage.getItem('user') || '{}')?.id
+            }, {
+                headers: {
                     'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
                 }
-            };
-            const res = await axios.post('http://localhost:5000/api/disease/detect', formData, config);
-            
-            const result = res.data; // Now contains { disease, confidence }
-            
-            // Add to chat as an AI response
+            });
+
+            const data = res.data;
+            const hasDiagnosis = data.crop || data.diagnosisEn;
+
             const aiMsg = {
                 role: 'ai',
-                text: `Crop analysis complete. I've detected symptoms of ${result.disease.replace(/___/g, ' ').replace(/_/g, ' ')}.`,
-                isAnalysis: true,
-                analysisData: result,
-                preview: imagePreview
+                text: hasDiagnosis
+                    ? `✅ Image analyzed: ${data.crop || 'Crop'} — ${data.diagnosisEn || 'See report below'}`
+                    : '⚠️ Could not clearly identify disease. Please try a clearer close-up photo.',
+                preview: capturedPreview,
+                report: hasDiagnosis ? data : null
             };
+
             setMessages(prev => [...prev, aiMsg]);
-            
-            // Add to history
-            setHistory(prev => [{ 
-                crop: result.disease.split(' ')[0], 
-                diagnosis: result.disease, 
-                date: 'Just Now' 
-            }, ...prev]);
+
+            // Update risk meter
+            const conf = parseFloat(data.confidence_score || 0.5);
+            setSeverity(conf > 0.85 ? 90 : conf > 0.7 ? 60 : 40);
+
+            if (data.crop) {
+                setHistory(prev => [{ crop: data.crop, diagnosis: data.diagnosisEn || 'Image Scan', date: 'Just Now' }, ...prev]);
+            }
 
         } catch (err) {
-            console.error("Detection error:", err);
-            const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown Error';
-            setMessages(prev => [...prev, { 
-                role: 'ai', 
-                text: `மன்னிக்கவும், படத்தைப் பகுப்பாய்வு செய்வதில் பிழை ஏற்பட்டது: ${errorMessage}` 
+            console.error("Image analysis error:", err);
+            const errMsg = err.response?.data?.error || err.message || 'Server error';
+            setMessages(prev => [...prev, {
+                role: 'ai',
+                text: `மன்னிக்கவும், படத்தை பகுப்பாய்வு செய்வதில் பிழை: ${errMsg}`
             }]);
         } finally {
             setLoading(false);
             setSelectedImage(null);
             setImagePreview(null);
+            analyzingRef.current = false; // 🔓 release lock for next upload
         }
     };
 
@@ -314,22 +333,57 @@ const AgriDoctor = () => {
                                 )}
                                 {m.report && (
                                     <div className="medical-report">
-                                        <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                                            <span className={`severity-tag ${m.report.severity.toLowerCase()}`}>
-                                                {m.report.severity} LEVEL RISK
-                                            </span>
-                                            <span style={{fontSize: '9px', fontWeight: 'bold', color: '#10b981'}}>
-                                                CONFIDENCE: {m.report.confidence || 'HIGH'}
+                                        {/* Header */}
+                                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px'}}>
+                                            <span style={{background:'#065f46', color:'#fff', padding:'3px 10px', borderRadius:'20px', fontSize:'10px', fontWeight:'bold', letterSpacing:'1px'}}>AI DIAGNOSIS</span>
+                                            <span style={{fontSize:'11px', fontWeight:'bold', color:'#10b981'}}>
+                                                {m.report.confidence_score ? `${(m.report.confidence_score * 100).toFixed(0)}% Confidence` : 'AI Verified'}
                                             </span>
                                         </div>
-                                        <p><strong>💊 {m.report.treatmentTa}</strong></p>
-                                        <p style={{fontSize: '11px', marginTop: '5px'}}>🛡️ {m.report.preventionTa}</p>
-                                        <hr style={{opacity: 0.1, margin: '10px 0'}} />
-                                        <p style={{fontSize: '10px', color: '#666'}}>
-                                            <b>Clinical Source:</b> {m.report.source || 'Global Agri-DB v4.0'}
-                                        </p>
-                                        <p style={{fontSize: '10px', color: '#666'}}>
-                                            <b>Doctor's Note:</b> {m.report.riskFactorEn}
+
+                                        {/* Crop + Disease */}
+                                        <div style={{background:'#f0fdf4', borderRadius:'12px', padding:'12px', marginBottom:'10px', border:'1px solid #bbf7d0'}}>
+                                            <p style={{fontSize:'12px', color:'#15803d', fontWeight:'bold', marginBottom:'4px'}}>🌿 Crop Identified</p>
+                                            <p style={{fontSize:'15px', fontWeight:'900', color:'#14532d', margin:0}}>{m.report.crop || 'Unknown Crop'}</p>
+                                            <p style={{fontSize:'12px', color:'#166534', marginTop:'6px', margin:'6px 0 0'}}>
+                                                <b>🔬 Disease:</b> {m.report.diagnosisEn || 'See details below'}
+                                            </p>
+                                            {m.report.diagnosisTa && (
+                                                <p style={{fontSize:'11px', color:'#166534', marginTop:'4px', fontStyle:'italic'}}>{m.report.diagnosisTa}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Treatment */}
+                                        <div style={{background:'#fffbeb', borderRadius:'12px', padding:'12px', marginBottom:'10px', border:'1px solid #fde68a'}}>
+                                            <p style={{fontSize:'12px', color:'#92400e', fontWeight:'bold', marginBottom:'6px'}}>💊 Treatment Plan</p>
+                                            <p style={{fontSize:'12px', color:'#78350f', lineHeight:'1.6', margin:0}}>{m.report.treatmentEn || m.report.treatmentTa || 'Consult local agri officer.'}</p>
+                                            {m.report.treatmentTa && m.report.treatmentEn && (
+                                                <p style={{fontSize:'11px', color:'#92400e', marginTop:'6px', fontStyle:'italic', borderTop:'1px dashed #fde68a', paddingTop:'6px'}}>{m.report.treatmentTa}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Prevention */}
+                                        <div style={{background:'#eff6ff', borderRadius:'12px', padding:'12px', marginBottom:'10px', border:'1px solid #bfdbfe'}}>
+                                            <p style={{fontSize:'12px', color:'#1e40af', fontWeight:'bold', marginBottom:'6px'}}>🛡️ Prevention / IPM</p>
+                                            <p style={{fontSize:'12px', color:'#1e3a8a', lineHeight:'1.6', margin:0}}>{m.report.preventionEn || m.report.preventionTa || 'Follow standard IPM practices.'}</p>
+                                            {m.report.preventionTa && m.report.preventionEn && (
+                                                <p style={{fontSize:'11px', color:'#1e40af', marginTop:'6px', fontStyle:'italic', borderTop:'1px dashed #bfdbfe', paddingTop:'6px'}}>{m.report.preventionTa}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Local/Organic Remedies */}
+                                        {(m.report.local_remediesEn || m.report.local_remediesTa) && (
+                                            <div style={{background:'#fdf4ff', borderRadius:'12px', padding:'12px', marginBottom:'10px', border:'1px solid #e9d5ff'}}>
+                                                <p style={{fontSize:'12px', color:'#6b21a8', fontWeight:'bold', marginBottom:'6px'}}>🌱 Local / Organic Remedies</p>
+                                                <p style={{fontSize:'12px', color:'#581c87', lineHeight:'1.6', margin:0}}>{m.report.local_remediesEn}</p>
+                                                {m.report.local_remediesTa && (
+                                                    <p style={{fontSize:'11px', color:'#7c3aed', marginTop:'6px', fontStyle:'italic', borderTop:'1px dashed #e9d5ff', paddingTop:'6px'}}>{m.report.local_remediesTa}</p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <p style={{fontSize:'10px', color:'#9ca3af', marginTop:'8px', textAlign:'right', fontStyle:'italic'}}>
+                                            Source: {m.report.source || 'TNAU / Global Agri-DB'}
                                         </p>
                                     </div>
                                 )}

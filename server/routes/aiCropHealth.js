@@ -2,123 +2,192 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const Diagnosis = require('../models/Diagnosis');
+const { getDiseaseInfo, diagnoseFromText } = require('../data/diseaseDatabase');
 
 /**
- * 🩺 ADVANCED AGRI-DOCTOR BACKEND (V5) - OPENAI GPT-4o-mini INTEGRATION
- * Features: OpenAI Chat Completions, Real-time Medical Diagnosis, History Tracking
+ * 🩺 AGRI-DOCTOR BACKEND (V6)
+ * Primary:  OpenAI GPT-4o-mini (text + vision)
+ * Fallback: HuggingFace image classification + Local TNAU Disease Database
+ *           (works even with no API quota / no internet)
  */
 
-// OpenAI Configuration
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const HF_TOKEN       = process.env.HF_TOKEN;
 
-/**
- * POST /api/ai-crop-health/answer
- * Body: { queryText, image, userId }
- */
+const SYSTEM_PROMPT = `You are an expert Agronomist and Plant Pathologist specialized in Tamil Nadu agriculture and TNAU (Tamil Nadu Agricultural University) standards.
+Analyze crop health issues from text or images and provide a highly specific agricultural diagnostic report.
+STRICT RULE: Focus exclusively on plant pathology, soil health, and pest management.
+
+Return response in STRICT JSON format:
+{
+  "crop": "Crop Name",
+  "diagnosisEn": "Scientific and common name of disease/pest/deficiency",
+  "diagnosisTa": "நோய்/பூச்சி பெயர் தமிழில்",
+  "treatmentEn": "Specific treatment with dosages (e.g. Carbendazim 50WP @ 1g/litre)",
+  "treatmentTa": "சிகிச்சை முறை தமிழில்",
+  "preventionEn": "IPM practices, crop rotation, resistant varieties",
+  "preventionTa": "தடுப்பு முறைகள் தமிழில்",
+  "confidence_score": 0.95,
+  "local_remediesEn": "Panchagavya/NSKE/Trichoderma/Jeevamrutam recommendations",
+  "local_remediesTa": "இயற்கை/பாரம்பரிய தீர்வுகள் தமிழில்"
+}`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/ai-crop-health/answer
+// Body: { queryText, image (base64 or data URI), userId }
+// ─────────────────────────────────────────────────────────────────────────────
 router.post('/answer', async (req, res) => {
     try {
         const { queryText, image, userId } = req.body;
-        if (!queryText && !image) return res.status(400).json({ error: "Query text or image is required" });
+        if (!queryText && !image) return res.status(400).json({ error: 'Query text or image is required' });
 
-        console.log(`🤖 Consulting OpenAI for: ${queryText || "Image Analysis"}`);
+        let responseData = null;
 
-        // 1. CONSTRUCT SYSTEM PROMPT (STRICTLY AGRICULTURAL)
-        const systemPrompt = `You are an expert Agronomist and Plant Pathologist specialized in Tamil Nadu agriculture and TNAU (Tamil Nadu Agricultural University) standards. 
-Your task is to analyze crop health issues from text or images and provide a highly specific agricultural diagnostic report. 
-STRICT RULE: DO NOT provide human medical advice. Focus exclusively on plant pathology, soil health, and pest management.
-
-Return the response in STRICT JSON format with the following structure:
-{
-  "crop": "Crop Name (e.g. Paddy, Tomato, Turmeric, Sugarcane)",
-  "diagnosisEn": "Scientific name and common name of the pest, disease, or nutrient deficiency",
-  "diagnosisTa": "நோய், பூச்சி அல்லது ஊட்டச்சத்து குறைபாட்டின் பெயர்",
-  "treatmentEn": "Specific agricultural treatment. Include dosages (e.g., ml/litre), biopesticides (e.g., Pseudomonas, Trichoderma), and chemical controls (e.g., Carbendazim, Mancozeb) if necessary.",
-  "treatmentTa": "தமிழ் மொழியில் சிகிச்சை முறைகள் (மருந்தின் அளவு மற்றும் தெளிக்கும் முறை)",
-  "preventionEn": "Integrated Pest Management (IPM) practices, crop rotation, and soil solarization advice.",
-  "preventionTa": "பயிர் மேலாண்மை மற்றும் தடுப்பு முறைகள்",
-  "confidence_score": 0.98,
-  "local_remediesEn": "Traditional Tamil Nadu organic remedies like Panchagavya, NSKE (Neem Seed Kernel Extract), or Jeevamrutam.",
-  "local_remediesTa": "பாரம்பரிய இயற்கை விவசாய முறைகள் (பஞ்சகவ்யா, வேப்பங்கொட்டை கரைசல், ஜீவாமிர்தம் போன்றவை)"
-}`;
-
-        // 2. CALL OPENAI API
-        let openAiResponse;
+        // ══════════════════════════════════════
+        // STAGE 1: Try OpenAI (text or vision)
+        // ══════════════════════════════════════
         if (OPENAI_API_KEY) {
             try {
-                // If it's an image, we use the vision capabilities (gpt-4o-mini supports vision)
+                console.log('🤖 Trying OpenAI...');
                 const messages = [
-                    { role: "system", content: systemPrompt },
-                    { 
-                        role: "user", 
+                    { role: 'system', content: SYSTEM_PROMPT },
+                    {
+                        role: 'user',
                         content: image ? [
-                            { type: "text", text: queryText || "Identify the disease and provide treatment for this plant." },
-                            { type: "image_url", image_url: { url: image.startsWith('data') ? image : `data:image/jpeg;base64,${image}` } }
-                        ] : queryText 
+                            { type: 'text', text: queryText || 'Identify the crop disease in this image and give detailed treatment.' },
+                            { type: 'image_url', image_url: { url: image.startsWith('data:') ? image : `data:image/jpeg;base64,${image}` } }
+                        ] : queryText
                     }
                 ];
 
-                const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-                    model: "gpt-4o-mini",
-                    messages: messages,
-                    response_format: { type: "json_object" },
-                    max_tokens: 1000
+                const openAiRes = await axios.post('https://api.openai.com/v1/chat/completions', {
+                    model: 'gpt-4o-mini',
+                    messages,
+                    response_format: { type: 'json_object' },
+                    max_tokens: image ? 1800 : 1000
                 }, {
-                    headers: {
-                        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+                    timeout: 20000
                 });
 
-                openAiResponse = JSON.parse(response.data.choices[0].message.content);
-            } catch (err) {
-                console.error("OpenAI API Error:", err.response?.data || err.message);
-                throw new Error("AI consultation failed");
+                const parsed = JSON.parse(openAiRes.data.choices[0].message.content);
+                responseData = { success: true, source: 'OpenAI GPT-4o-mini', ...parsed, timestamp: new Date().toISOString() };
+                console.log('✅ OpenAI diagnosis complete');
+            } catch (openAiErr) {
+                const errCode = openAiErr.response?.data?.error?.code;
+                console.warn(`⚠️ OpenAI skipped (${errCode || openAiErr.message}). Using fallback...`);
             }
-        } else {
-            return res.status(500).json({ error: "OpenAI API Key missing" });
         }
 
-        const responseData = {
-            success: true,
-            source: "OpenAI GPT-4o-mini (Clinical AI)",
-            ...openAiResponse,
-            timestamp: new Date().toISOString()
-        };
+        // ══════════════════════════════════════════════════════════
+        // STAGE 2: HuggingFace image classification (image only)
+        // ══════════════════════════════════════════════════════════
+        if (!responseData && image && HF_TOKEN) {
+            try {
+                console.log('📡 Trying HuggingFace crop disease model...');
+                // Strip data URI prefix and decode to buffer
+                const base64Data = image.includes(',') ? image.split(',')[1] : image;
+                const imageBuffer = Buffer.from(base64Data, 'base64');
 
-        // 3. PERSISTENCE (Save to MongoDB History)
+                const hfRes = await axios({
+                    method: 'POST',
+                    url: 'https://router.huggingface.co/hf-inference/models/trpakov/crop-disease-classification',
+                    headers: { Authorization: `Bearer ${HF_TOKEN}`, 'Content-Type': 'application/octet-stream' },
+                    data: imageBuffer,
+                    timeout: 12000
+                });
+
+                if (hfRes.data && Array.isArray(hfRes.data) && hfRes.data.length > 0) {
+                    const topLabel = hfRes.data[0].label;
+                    const score    = hfRes.data[0].score;
+                    console.log(`✅ HF classified: ${topLabel} (${(score * 100).toFixed(1)}%)`);
+                    const dbEntry = getDiseaseInfo(topLabel);
+                    responseData = {
+                        success: true,
+                        source: 'HuggingFace + TNAU Disease Database',
+                        ...dbEntry,
+                        confidence_score: score,
+                        timestamp: new Date().toISOString()
+                    };
+                }
+            } catch (hfErr) {
+                console.warn('⚠️ HuggingFace skipped:', hfErr.message);
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // STAGE 3: Local text-based rule matching (offline fallback)
+        // ══════════════════════════════════════════════════════════
+        if (!responseData && queryText) {
+            console.log('🛠️ Using local disease rule engine...');
+            const match = diagnoseFromText(queryText);
+            if (match) {
+                responseData = {
+                    success: true,
+                    source: 'TNAU Local Disease Database',
+                    ...match,
+                    timestamp: new Date().toISOString()
+                };
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // STAGE 4: Generic local fallback (last resort for images)
+        // ══════════════════════════════════════════════════════════
+        if (!responseData && image) {
+            console.log('🛠️ Using generic image fallback...');
+            const { DISEASE_DB } = require('../data/diseaseDatabase');
+            responseData = {
+                success: true,
+                source: 'TNAU Local Disease Database (Generic)',
+                ...DISEASE_DB["Unknown___Disease"],
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        if (!responseData) {
+            return res.status(422).json({
+                error: 'Could not diagnose the issue.',
+                suggestion: 'Please describe the disease symptoms more clearly, e.g. "Tomato leaves with yellow spots"'
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // PERSIST to MongoDB if userId provided
+        // ══════════════════════════════════════════════════════════
         if (userId && userId !== 'guest') {
             try {
                 await Diagnosis.create({
-                    user: userId,
-                    crop: responseData.crop,
-                    diagnosisEn: responseData.diagnosisEn,
-                    diagnosisTa: responseData.diagnosisTa,
-                    treatmentEn: responseData.treatmentEn,
-                    treatmentTa: responseData.treatmentTa,
-                    preventionEn: responseData.preventionEn,
-                    preventionTa: responseData.preventionTa,
-                    confidence: responseData.confidence_score,
+                    user:          userId,
+                    crop:          responseData.crop,
+                    diagnosisEn:   responseData.diagnosisEn,
+                    diagnosisTa:   responseData.diagnosisTa,
+                    treatmentEn:   responseData.treatmentEn,
+                    treatmentTa:   responseData.treatmentTa,
+                    preventionEn:  responseData.preventionEn,
+                    preventionTa:  responseData.preventionTa,
+                    confidence:    responseData.confidence_score,
                     local_remediesEn: responseData.local_remediesEn,
                     local_remediesTa: responseData.local_remediesTa,
-                    queryText: queryText || "Image Diagnosis",
-                    image: image ? "IMAGE_ANALYZED" : null
+                    queryText:     queryText || 'Image Diagnosis',
+                    image:         image ? 'IMAGE_ANALYZED' : null
                 });
-            } catch (err) {
-                console.error("💾 History save error:", err);
+            } catch (dbErr) {
+                console.warn('💾 History save error:', dbErr.message);
             }
         }
 
         res.json(responseData);
 
     } catch (error) {
-        console.error("AI Doctor System Failure:", error);
-        res.status(500).json({ error: "AI consultation service failure" });
+        console.error('AI Doctor System Failure:', error.message);
+        res.status(500).json({ error: 'AI consultation service failure', detail: error.message });
     }
 });
 
-/**
- * GET /api/ai-crop-health/history/:userId
- */
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/ai-crop-health/history/:userId
+// ─────────────────────────────────────────────────────────────────────────────
 router.get('/history/:userId', async (req, res) => {
     try {
         const history = await Diagnosis.find({ user: req.params.userId })
@@ -126,7 +195,7 @@ router.get('/history/:userId', async (req, res) => {
             .limit(10);
         res.json({ success: true, history });
     } catch (err) {
-        res.status(500).json({ error: "Failed to fetch medical history" });
+        res.status(500).json({ error: 'Failed to fetch history' });
     }
 });
 

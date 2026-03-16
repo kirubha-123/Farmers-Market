@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mic, MicOff, Volume2, TrendingUp, Truck, CreditCard, X, Sparkles, ChevronRight, Activity, ArrowUpRight, MapPin, Calendar, Loader2, Phone, Fingerprint, User, ArrowLeft, ExternalLink } from 'lucide-react';
 import { useVoice } from './VoiceContext';
 import axios from 'axios';
 
 const VoiceUI = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const {
         transcript,
         isListening,
@@ -17,6 +18,10 @@ const VoiceUI = () => {
         setLanguage,
         resetTranscript
     } = useVoice();
+
+    // 🚀 NEW: Hide Voice Assistant on Messages and Login pages to avoid UI collision
+    const hiddenRoutes = ['/messages', '/login', '/farmer-login', '/buyer-login', '/register', '/ai-price', '/agri-doctor'];
+    const isHidden = hiddenRoutes.some(route => location.pathname.startsWith(route));
 
     const [showUI, setShowUI] = useState(false);
     const [predictions, setPredictions] = useState([]);
@@ -258,6 +263,8 @@ const VoiceUI = () => {
             processCommand();
         }
     }, [isListening, transcript]);
+
+    if (isHidden) return null;
 
     return (
         <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end">

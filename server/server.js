@@ -41,6 +41,7 @@ app.use('/api/disease', require('./routes/diseaseRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/address', require('./routes/address'));
 app.use('/api/payment', require('./routes/payment'));
+app.use('/api/messages', require('./routes/messages'));
 
 // 5. ERROR HANDLING
 app.use((err, req, res, next) => {

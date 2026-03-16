@@ -91,15 +91,26 @@ function ProductDetail() {
             {/* Farmer */}
             {product.farmer && (
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                    👨‍🌾
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                      👨‍🌾
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Sold by</p>
+                      <p className="font-semibold text-emerald-900">{product.farmer.name}</p>
+                      <p className="text-xs text-gray-500">{product.location}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Sold by</p>
-                    <p className="font-semibold text-emerald-900">{product.farmer.name}</p>
-                    <p className="text-xs text-gray-500">{product.location}</p>
-                  </div>
+                  <button 
+                    onClick={() => navigate(`/messages/${product.farmer._id}`)}
+                    className="flex flex-col items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold"
+                  >
+                    <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center border border-emerald-100 hover:bg-emerald-100 transition-colors">
+                      💬
+                    </div>
+                    <span className="text-[10px] uppercase tracking-wider">Chat</span>
+                  </button>
                 </div>
               </div>
             )}

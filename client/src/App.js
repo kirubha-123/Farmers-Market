@@ -25,6 +25,7 @@ import CheckoutPayment from './pages/CheckoutPayment';
 import OrderSuccess from './pages/OrderSuccess';
 import MyOrders from './pages/MyOrders';
 import FarmerOrders from './pages/FarmerOrders';
+import Messages from './pages/Messages';
 
 function App() {
   return (
@@ -78,6 +79,10 @@ function App() {
         {/* 📦 Order History */}
         <Route path="/my-orders" element={<MyOrders />} />
         <Route path="/farmer-orders" element={<FarmerOrders />} />
+        
+        {/* 💬 Messaging */}
+        <Route path="/messages" element={<Messages />} />
+        <Route path="/messages/:userId" element={<Messages />} />
       </Routes>
 
       {/* 🚀 Global AgriForge Voice UI */}
