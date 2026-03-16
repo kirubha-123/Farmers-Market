@@ -55,7 +55,7 @@ app.use((err, req, res, next) => {
 // Serve static files from React build (Production)
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/build')));
-  app.get('*', (req, res) => {
+  app.get('*all', (req, res) => {
     // If request is NOT for an API route, serve index.html
     if (!req.url.startsWith('/api')) {
       res.sendFile(path.resolve(__dirname, '../client', 'build', 'index.html'));
