@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_URL } from '../api';
 import './AiPriceAdvisor.css';
