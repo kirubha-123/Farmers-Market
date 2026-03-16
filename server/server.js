@@ -25,7 +25,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 3. HEALTH CHECK
 app.get('/api/health', (req, res) => res.json({ status: 'OK', env: process.env.NODE_ENV, database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' }));
-app.get('/', (req, res) => res.json({ message: '🌾 Farmers Market API LIVE', version: '1.0.0' }));
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/', (req, res) => res.json({ message: '🌾 Farmers Market API LIVE', version: '1.0.0' }));
+}
 
 // 4. ALL ROUTES
 app.use('/api/auth', require('./routes/auth'));
