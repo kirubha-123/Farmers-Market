@@ -7,7 +7,7 @@
     "install-all": "npm install && cd server && npm install && cd ../client && npm install",
     "build-client": "cd client && npm run build",
     "start": "cd server && npm start",
-    "build": "npm run render-postbuild",
+    "build": "node -e \"console.log('Building from Root')\" && npm run render-postbuild",
     "render-postbuild": "cd client && npm install && npm run build && cd ../server && npm install"
   },
   "dependencies": {},
