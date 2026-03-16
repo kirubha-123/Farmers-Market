@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api';
+import { api, BASE_URL } from '../api';
 import Navbar from '../components/Navbar';
 import { Link } from 'react-router-dom';
 
@@ -143,7 +143,7 @@ function ProductList() {
                   <div className="h-40 bg-gray-100 relative group-hover:brightness-105">
                     {p.image ? (
                       <img
-                        src={`http://localhost:5000${p.image}`}
+                        src={`${BASE_URL}${p.image}`}
                         alt={p.name}
                         className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
                       />

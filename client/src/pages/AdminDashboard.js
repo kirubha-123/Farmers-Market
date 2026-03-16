@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../api';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -37,10 +38,10 @@ const AdminDashboard = () => {
             const config = { headers: { Authorization: `Bearer ${token}` } };
             
             const [statsRes, usersRes, productsRes, reportsRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/admin/stats', config),
-                axios.get('http://localhost:5000/api/admin/users', config),
-                axios.get('http://localhost:5000/api/admin/products', config),
-                axios.get('http://localhost:5000/api/admin/reports', config)
+                axios.get(`${API_URL}/admin/stats`, config),
+                axios.get(`${API_URL}/admin/users`, config),
+                axios.get(`${API_URL}/admin/products`, config),
+                axios.get(`${API_URL}/admin/reports`, config)
             ]);
 
             console.log("✅ Stats:", statsRes.data);
@@ -65,7 +66,7 @@ const AdminDashboard = () => {
     const handleDeleteUser = async (id) => {
         if (!window.confirm("Are you sure you want to delete this user?")) return;
         try {
-            await axios.delete(`http://localhost:5000/api/admin/user/${id}`, {
+            await axios.delete(`${API_URL}/admin/user/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setUsers(users.filter(u => u._id !== id));
@@ -78,7 +79,7 @@ const AdminDashboard = () => {
     const handleDeleteProduct = async (id) => {
         if (!window.confirm("Are you sure you want to remove this product?")) return;
         try {
-            await axios.delete(`http://localhost:5000/api/admin/product/${id}`, {
+            await axios.delete(`${API_URL}/admin/product/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setProducts(products.filter(p => p._id !== id));

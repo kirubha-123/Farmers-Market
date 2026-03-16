@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import VoiceInput from '../components/VoiceInput';
-import { api } from '../api';
+import { api, BASE_URL } from '../api';
 import { Sparkles } from 'lucide-react';
 
 function FarmerDashboard() {
@@ -430,7 +430,7 @@ function FarmerDashboard() {
                     <div className={`h-40 rounded-xl bg-gray-100 mb-4 overflow-hidden relative group ${isLowStock ? 'opacity-80' : ''}`}>
                       {p.image ? (
                         <img
-                          src={`http://localhost:5000${p.image}`}
+                          src={`${BASE_URL}${p.image}`}
                           alt={p.name}
                           className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
                           loading="lazy"

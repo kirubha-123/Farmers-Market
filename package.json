@@ -1,5 +1,16 @@
 {
-  "dependencies": {
-    "react-speech-recognition": "^4.0.1"
+  "name": "farmers-market-fullstack",
+  "version": "1.0.0",
+  "description": "Farmers Market Fullstack Application",
+  "main": "server/server.js",
+  "scripts": {
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build-client": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "render-postbuild": "cd client && npm install && npm run build && cd ../server && npm install"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

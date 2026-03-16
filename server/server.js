@@ -52,6 +52,17 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Serve static files from React build (Production)
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../client/build')));
+  app.get('*', (req, res) => {
+    // If request is NOT for an API route, serve index.html
+    if (!req.url.startsWith('/api')) {
+      res.sendFile(path.resolve(__dirname, '../client', 'build', 'index.html'));
+    }
+  });
+}
+
 const PORT = process.env.PORT || 5000;
 
 // 6. DB CONNECTION + SERVER START (Graceful Fallback)

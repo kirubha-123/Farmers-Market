@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import { API_URL } from '../api';
 import { Link } from 'react-router-dom';
 import { Camera, Image as ImageIcon, History, Cloud, CheckCircle2, AlertTriangle, ThermometerSun, Droplets, Wind, Sparkles, Navigation } from 'lucide-react';
 import './AiCropHealth.css';
@@ -45,8 +47,8 @@ const AiCropHealth = () => {
 
     const fetchHistory = async (uid) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/ai-crop-health/history/${uid}`);
-            const data = await res.json();
+            const res = await axios.get(`${API_URL}/ai-crop-health/history/${uid}`);
+            const data = res.data;
             if (data.success) setHistoryData(data.history);
         } catch (err) { console.error("History fetch error", err); }
     };
@@ -55,16 +57,11 @@ const AiCropHealth = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('http://localhost:5000/api/ai-crop-health/answer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    queryText, 
+            const response = await axios.post(`${API_URL}/ai-crop-health/answer`, {                    queryText, 
                     image: base64Image,
-                    userId: user ? (user.id || user._id) : 'guest'
-                })
+                userId: user ? (user.id || user._id) : 'guest'
             });
-            const data = await response.json();
+            const data = response.data;
             if (data.success) {
                 setResult(data);
                 if (user) fetchHistory(user.id || user._id);

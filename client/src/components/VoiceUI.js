@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Mic, MicOff, Volume2, TrendingUp, Truck, CreditCard, X, Sparkles, ChevronRight, Activity, ArrowUpRight, MapPin, Calendar, Loader2, Phone, Fingerprint, User, ArrowLeft, ExternalLink } from 'lucide-react';
 import { useVoice } from './VoiceContext';
 import axios from 'axios';
+import { API_URL } from '../api';
 
 const VoiceUI = () => {
     const navigate = useNavigate();
@@ -134,7 +135,7 @@ const VoiceUI = () => {
 
                 if (cropName) {
                     try {
-                        const res = await axios.get(`http://localhost:5000/api/products/search?name=${cropName}&location=${queryLocation}`);
+                        const res = await axios.get(`${API_URL}/products/search?name=${cropName}&location=${queryLocation}`);
                         const data = res.data;
 
                         setLogistics([]);
@@ -174,7 +175,7 @@ const VoiceUI = () => {
                     if (origin) params.origin = origin;
                     if (destination) params.destination = destination;
 
-                    const res = await axios.get(`http://localhost:5000/api/logistics`, { params });
+                    const res = await axios.get(`${API_URL}/logistics`, { params });
                     setPredictions([]);
                     setLogistics(res.data);
 
@@ -204,7 +205,7 @@ const VoiceUI = () => {
 
             if (isHealthRequest) {
                 try {
-                    const res = await axios.post('http://localhost:5000/api/ai-crop-health/answer', {
+                    const res = await axios.post(`${API_URL}/ai-crop-health/answer`, {
                         queryText: transcript
                     });
                     
@@ -238,7 +239,7 @@ const VoiceUI = () => {
                 try {
                     const results = await Promise.all(
                         detectedCrops.map(async (c) => {
-                            const res = await axios.post('http://localhost:5000/api/predictions/predict', {
+                            const res = await axios.post(`${API_URL}/predictions/predict`, {
                                 crop: c,
                                 location: origin || "Chennai"
                             });

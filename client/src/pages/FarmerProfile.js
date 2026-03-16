@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { api } from '../api';
+import { api, BASE_URL } from '../api';
 
 function FarmerProfile() {
   const { id } = useParams(); 
@@ -126,8 +126,7 @@ function FarmerProfile() {
               >
                 <div className="h-48 bg-gray-100 relative">
                   <img 
-                    src={product.image ? `http://localhost:5000${product.image}` : 'https://via.placeholder.com/300'} 
-                    alt={product.name}
+                    src={product.image ? `${BASE_URL}${product.image}` : 'https://via.placeholder.com/300'}                    alt={product.name}
                     className="w-full h-full object-cover"
                   />
                   <span className="absolute top-2 right-2 bg-white/90 text-emerald-800 text-xs font-bold px-2 py-1 rounded shadow-sm">

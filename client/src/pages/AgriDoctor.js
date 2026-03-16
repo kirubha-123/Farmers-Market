@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { API_URL } from '../api';
 import './AgriDoctor.css';
 
 const AgriDoctor = () => {
@@ -115,7 +116,7 @@ const AgriDoctor = () => {
             await new Promise(r => setTimeout(r, 600));
             setLoadingStatus("Generating Treatment Protocol...");
 
-            const res = await axios.post('http://localhost:5000/api/ai-crop-health/answer', { queryText: text });
+            const res = await axios.post(`${API_URL}/ai-crop-health/answer`, { queryText: text });
             const data = res.data;
 
             // Always build a full AI report card if we have diagnosis data
@@ -175,7 +176,7 @@ const AgriDoctor = () => {
             setLoadingStatus("🤖 Sending to AI Vision Doctor...");
 
             // Use the OpenAI-powered crop health route (supports vision)
-            const res = await axios.post('http://localhost:5000/api/ai-crop-health/answer', {
+            const res = await axios.post(`${API_URL}/ai-crop-health/answer`, {
                 queryText: (input ? `${input}. ` : '') + 'Identify the crop disease in this image and provide detailed treatment and prevention steps.',
                 image: base64,
                 imageName: selectedImage?.name || '',

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import { API_URL } from '../api';
 import './AiPriceAdvisor.css';
 
 const AiPriceAdvisor = () => {
@@ -57,7 +58,7 @@ const AiPriceAdvisor = () => {
     const fetchPriceAdvice = async (queryText) => {
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:5000/api/ai-price/answer', {
+            const response = await axios.post(`${API_URL}/ai-price/answer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -66,7 +67,7 @@ const AiPriceAdvisor = () => {
                 })
             });
 
-            const data = await response.json();
+            const data = response.data;
             if (data.success) {
                 setResult(data);
             } else {

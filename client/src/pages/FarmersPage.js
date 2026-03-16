@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer'; // Add if you have Footer
-import { api } from '../api';
+import { api, BASE_URL } from '../api';
 
 function FarmersPage() {
   const [farmers, setFarmers] = useState([]);
@@ -61,7 +61,7 @@ function FarmersPage() {
               <div className="relative h-64 bg-gradient-to-br from-emerald-500 to-green-600 p-8 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
                 {farmer.avatar ? (
                   <img
-                    src={`http://localhost:5000/uploads/${farmer.avatar}`}
+                    src={`${BASE_URL}/uploads/${farmer.avatar}`}
                     alt={farmer.name}
                     className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-2xl group-hover:shadow-white/50 transition-shadow"
                   />

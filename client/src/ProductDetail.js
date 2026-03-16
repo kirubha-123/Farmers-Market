@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';        // ✅ FIXED: ./components/
 import Footer from './components/Footer';        // ✅ FIXED: ./components/
-import { api } from './api';
+import { api, BASE_URL } from './api';
 
 function ProductDetail() {
   const { productId } = useParams();
@@ -82,7 +82,7 @@ function ProductDetail() {
           <div className="space-y-6">
             <div className="aspect-[4/3] bg-white rounded-2xl shadow-xl overflow-hidden">
               <img
-                src={`http://localhost:5000${product.image}`}
+                src={`${BASE_URL}${product.image}`}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
