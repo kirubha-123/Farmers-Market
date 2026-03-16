@@ -322,14 +322,41 @@ const DISEASE_DB = {
  */
 function getDiseaseInfo(label) {
   if (!label) return DISEASE_DB["Unknown___Disease"];
+  
   // Try exact match first
   if (DISEASE_DB[label]) return DISEASE_DB[label];
+  
   // Try partial match
   const key = Object.keys(DISEASE_DB).find(k =>
     label.toLowerCase().includes(k.toLowerCase().replace(/___/g, '_').replace(/_/g, ' ').toLowerCase()) ||
     k.toLowerCase().includes(label.toLowerCase().replace(/ /g, '_'))
   );
-  return DISEASE_DB[key] || DISEASE_DB["Unknown___Disease"];
+  if (key && DISEASE_DB[key]) return DISEASE_DB[key];
+
+  // Dynamic Label Parsing (for PlantVillage dataset like "Tomato___Bacterial_spot")
+  if (label.includes('___')) {
+      const parts = label.split('___');
+      const cropRaw = parts[0].replace(/_\(including_sour\)|_\(maize\)|,_bell/ig, '').replace(/_/g, ' ');
+      const diseaseRaw = parts[1].replace(/_/g, ' ');
+      
+      const isHealthy = diseaseRaw.toLowerCase().includes('healthy');
+      
+      return {
+          label: label,
+          crop: cropRaw.trim() || 'Identified Crop',
+          diagnosisEn: isHealthy ? `The ${cropRaw} plant appears healthy. No visible signs of disease.` : `Identified condition: ${diseaseRaw}.`,
+          diagnosisTa: isHealthy ? `இந்த ${cropRaw} செடி ஆரோக்கியமாக தெரிகிறது.` : `கண்டறியப்பட்ட நோய்: ${diseaseRaw}.`,
+          treatmentEn: isHealthy ? `No treatment required. Maintain regular monitoring.` : `Apply broad-spectrum fungicide/pesticide suited for ${diseaseRaw}. Consult local agricultural officer for specific dosages.`,
+          treatmentTa: isHealthy ? `சிகிச்சை தேவையில்லை. தொடர்ந்து கண்காணிக்கவும்.` : `பொருத்தமான பூச்சிக்கொல்லி/பூஞ்சாணக்கொல்லி தெளிக்கவும். உழவர் மையத்தை அணுகவும்.`,
+          preventionEn: isHealthy ? `Continue good agricultural practices.` : `Ensure proper plant spacing, avoid overhead irrigation, and remove affected plant parts.`,
+          preventionTa: isHealthy ? `நல்ல விவசாய நடைமுறைகளை பின்பற்றவும்.` : `பாதிக்கப்பட்ட பகுதிகளை அகற்றி, நோய் பரவாமல் தடுக்கவும்.`,
+          local_remediesEn: isHealthy ? `Routine weekly Panchagavya 3% spray.` : `Neem oil 3% spray as initial preventive measure.`,
+          local_remediesTa: isHealthy ? `மாதந்தோறும் பஞ்சகவ்யா 3% தெளிப்பு.` : `வேப்ப எண்ணெய் 3% இலைகளில் தெளிக்கவும்.`,
+          confidence_score: 0.70 // Default confidence for dynamic matches
+      };
+  }
+
+  return DISEASE_DB["Unknown___Disease"];
 }
 
 /**

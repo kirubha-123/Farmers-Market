@@ -9,6 +9,9 @@ const userSchema = new mongoose.Schema(
     phone: String,
     location: String,
     profilePic: String,
+    about: String,
+    specialty: String, // e.g., 'Organic Vegetables', 'High-quality Grains'
+    avatar: String, // Alias or specific path for profile image
   },
   { timestamps: true }
 );

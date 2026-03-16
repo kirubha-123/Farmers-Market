@@ -98,8 +98,19 @@ function ProductDetail() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Sold by</p>
-                      <p className="font-semibold text-emerald-900">{product.farmer.name}</p>
-                      <p className="text-xs text-gray-500">{product.location}</p>
+                      <button 
+                        onClick={() => navigate(`/farmers/${product.farmer._id}`)}
+                        className="font-bold text-emerald-900 hover:text-emerald-600 transition-colors text-lg text-left block"
+                      >
+                        {product.farmer.name}
+                      </button>
+                      <p className="text-xs text-emerald-600 font-semibold">{product.location}</p>
+                      <button 
+                         onClick={() => navigate(`/farmers/${product.farmer._id}`)}
+                         className="text-[10px] text-emerald-500 font-bold uppercase tracking-tighter hover:underline mt-1"
+                      >
+                        View Full Profile →
+                      </button>
                     </div>
                   </div>
                   <button 

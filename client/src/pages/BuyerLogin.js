@@ -31,7 +31,7 @@ function BuyerLogin() {
         navigate('/market'); 
       }
     } catch (err) {
-      setError('Invalid credentials');
+      setError(err.response?.data?.message || 'Login failed due to server error. Please try again later.');
     }
   };
 

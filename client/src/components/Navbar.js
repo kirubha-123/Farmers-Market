@@ -135,6 +135,14 @@ function Navbar() {
           >
             🛒
           </button>
+
+          <button
+            onClick={() => navigate('/profile')}
+            className="text-emerald-900/80 hover:text-emerald-900 text-xl"
+            title="My Profile"
+          >
+            👤
+          </button>
           
           <button
             onClick={handleLogout}

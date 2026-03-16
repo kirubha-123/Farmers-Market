@@ -91,7 +91,7 @@ router.post('/login', async (req, res) => {
 // ✅ PUT /api/auth/profile - UPDATE PROFILE ROUTE
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { name, location, phone } = req.body;
+    const { name, location, phone, about, specialty } = req.body;
     
     // Find user by ID attached from auth middleware
     const user = await User.findById(req.user.id);
@@ -101,6 +101,8 @@ router.put('/profile', auth, async (req, res) => {
       user.name = name || user.name;
       user.location = location || user.location;
       user.phone = phone || user.phone;
+      user.about = about || user.about;
+      user.specialty = specialty || user.specialty;
       
       const updatedUser = await user.save();
       
@@ -112,6 +114,8 @@ router.put('/profile', auth, async (req, res) => {
         role: updatedUser.role,
         location: updatedUser.location,
         phone: updatedUser.phone,
+        about: updatedUser.about,
+        specialty: updatedUser.specialty,
       });
     } else {
       res.status(404).json({ message: 'User not found' });

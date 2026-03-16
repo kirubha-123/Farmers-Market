@@ -174,8 +174,17 @@ function ProductList() {
 
                     {/* ✅ FARMER LINK */}
                     {p.farmer && (
-                      <div className="text-[11px] mb-2 text-emerald-700/90 hover:text-emerald-600 transition-colors">
-                        👨‍🌾 {p.farmer.name || 'Local Farmer'} • {p.location || 'Nearby'}
+                      <div className="mb-3">
+                        <Link 
+                          to={`/farmers/${p.farmer._id}`}
+                          onClick={(e) => e.stopPropagation()} // Prevent card click
+                          className="text-[11px] font-bold text-emerald-900 hover:text-emerald-500 transition-colors flex items-center gap-1"
+                        >
+                          👨‍🌾 {p.farmer.name}
+                        </Link>
+                        <p className="text-[10px] text-emerald-600/70 truncate">
+                          {p.farmer.specialty || 'General Farmer'} • {p.location || 'Local Area'}
+                        </p>
                       </div>
                     )}
 

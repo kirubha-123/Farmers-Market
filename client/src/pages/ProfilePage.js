@@ -11,7 +11,9 @@ function ProfilePage() {
     name: '',
     email: '',
     location: '',
-    phone: ''
+    phone: '',
+    about: '',
+    specialty: ''
   });
 
   useEffect(() => {
@@ -23,7 +25,9 @@ function ProfilePage() {
         name: storedUser.name || '',
         email: storedUser.email || '',
         location: storedUser.location || '',
-        phone: storedUser.phone || ''
+        phone: storedUser.phone || '',
+        about: storedUser.about || '',
+        specialty: storedUser.specialty || ''
       });
     }
   }, []);
@@ -36,9 +40,6 @@ function ProfilePage() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      // Call API to update profile
-      // Note: You need to ensure your backend has a PUT /api/auth/profile route or similar
-      // If not, you might need to create it. For now, we simulate update locally.
       
       const res = await api.put('/auth/profile', editForm, {
         headers: { Authorization: `Bearer ${token}` }
@@ -52,7 +53,7 @@ function ProfilePage() {
       alert('Profile updated successfully!');
     } catch (err) {
       console.error(err);
-      alert('Failed to update profile. (Check if backend route exists)');
+      alert('Failed to update profile.');
     }
   };
 
@@ -73,7 +74,12 @@ function ProfilePage() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-emerald-900">{user.name}</h2>
-                <p className="text-emerald-600 capitalize">{user.role}</p>
+                <p className="text-emerald-600 capitalize font-medium">{user.role}</p>
+                {user.role === 'farmer' && user.specialty && (
+                  <p className="text-xs text-emerald-700 mt-1 bg-emerald-50 px-2 py-0.5 rounded-full inline-block">
+                    Specialty: {user.specialty}
+                  </p>
+                )}
               </div>
             </div>
             
@@ -86,7 +92,7 @@ function ProfilePage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm mb-6">
             <div className="p-4 bg-emerald-50/50 rounded-xl">
               <p className="text-emerald-900/60 mb-1">Email Address</p>
               <p className="font-medium text-emerald-900">{user.email}</p>
@@ -99,19 +105,30 @@ function ProfilePage() {
               <p className="text-emerald-900/60 mb-1">Phone Number</p>
               <p className="font-medium text-emerald-900">{user.phone || 'Not set'}</p>
             </div>
-            <div className="p-4 bg-emerald-50/50 rounded-xl">
-              <p className="text-emerald-900/60 mb-1">Account ID</p>
-              <p className="font-mono text-emerald-700">{user.id || user._id}</p>
-            </div>
+            {user.role === 'farmer' && (
+              <div className="p-4 bg-emerald-50/50 rounded-xl">
+                <p className="text-emerald-900/60 mb-1">Specialty</p>
+                <p className="font-medium text-emerald-900">{user.specialty || 'Not specified'}</p>
+              </div>
+            )}
           </div>
+
+          {user.role === 'farmer' && (
+            <div className="mt-4 border-t border-emerald-50 pt-4">
+              <p className="text-sm text-emerald-900/60 mb-1 uppercase tracking-wider font-bold text-[10px]">About Me</p>
+              <p className="text-emerald-900 italic leading-relaxed">
+                {user.about || 'No about information provided yet.'}
+              </p>
+            </div>
+          )}
         </div>
       </main>
 
       {/* Edit Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-emerald-50/50">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-emerald-50/50 sticky top-0">
               <h3 className="text-lg font-bold text-emerald-900">Edit Profile</h3>
               <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
             </div>
@@ -126,18 +143,20 @@ function ProfilePage() {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
-              
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                <input 
-                  name="email"
-                  value={editForm.email}
-                  disabled
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500 cursor-not-allowed"
-                />
-                <p className="text-[10px] text-gray-400 mt-1">Email cannot be changed</p>
-              </div>
 
+              {user.role === 'farmer' && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Specialty</label>
+                  <input 
+                    name="specialty"
+                    value={editForm.specialty}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Organic Grains"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+              )}
+              
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
                 <input 
@@ -159,6 +178,20 @@ function ProfilePage() {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
+
+              {user.role === 'farmer' && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">About Me</label>
+                  <textarea 
+                    name="about"
+                    value={editForm.about}
+                    onChange={handleInputChange}
+                    rows="4"
+                    placeholder="Tell buyers about your farm and experience..."
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
+                  />
+                </div>
+              )}
 
               <div className="pt-2 flex gap-3">
                 <button 

@@ -40,7 +40,7 @@ const upload = multer({
 router.get('/', async (req, res) => {
   try {
     const products = await Product.find()
-      .populate('farmer', 'name location phone')
+      .populate('farmer', 'name location phone specialty about')
       .sort({ createdAt: -1 });
     res.json(products);
   } catch (err) {
@@ -93,7 +93,7 @@ router.get('/search', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
-      .populate('farmer', 'name location phone');
+      .populate('farmer', 'name location phone specialty about');
     if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(product);
   } catch (err) {

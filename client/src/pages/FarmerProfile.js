@@ -61,20 +61,49 @@ function FarmerProfile() {
           </div>
           <div className="text-center md:text-left">
             <h1 className="text-3xl font-bold">{farmer.name}</h1>
-            <p className="text-emerald-100 flex items-center justify-center md:justify-start gap-2 mt-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-              {farmer.location || 'Location not specified'}
-            </p>
-            <div className="mt-4 flex gap-4 text-sm font-medium justify-center md:justify-start">
-               <span className="bg-emerald-800 px-3 py-1 rounded-full border border-emerald-500">
-                 {products.length} Products Listed
+            {farmer.specialty && (
+              <p className="text-emerald-200 text-sm font-semibold uppercase tracking-wider mb-2">
+                Specialist in {farmer.specialty}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-2">
+              <p className="text-emerald-100 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                {farmer.location || 'Location not specified'}
+              </p>
+              {farmer.phone && (
+                <p className="text-emerald-100 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                  {farmer.phone}
+                </p>
+              )}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-4 text-sm font-medium justify-center md:justify-start">
+               <span className="bg-emerald-800/50 px-3 py-1.5 rounded-full border border-emerald-500/30 backdrop-blur-sm flex items-center gap-1 shadow-inner">
+                 📦 {products.length} Products
                </span>
-               <span className="bg-emerald-800 px-3 py-1 rounded-full border border-emerald-500">
+               <span className="bg-emerald-800/50 px-3 py-1.5 rounded-full border border-emerald-500/30 backdrop-blur-sm flex items-center gap-1 shadow-inner">
                  Verified Seller ✅
                </span>
+               <span className="bg-emerald-800/50 px-3 py-1.5 rounded-full border border-emerald-500/30 backdrop-blur-sm flex items-center gap-1 shadow-inner">
+                 Since {new Date(farmer.createdAt).getFullYear()}
+               </span>
+               <Link 
+                  to={`/messages/${farmer._id}`}
+                  className="bg-amber-400 text-amber-900 border border-amber-300 px-4 py-1.5 rounded-full font-bold hover:bg-amber-300 transition shadow-lg flex items-center gap-2 active:scale-95"
+               >
+                 💬 Chat with Farmer
+               </Link>
             </div>
             {/* Show About text if available */}
-            {farmer.about && <p className="mt-4 text-emerald-50 max-w-2xl text-sm opacity-90">{farmer.about}</p>}
+            {farmer.about && (
+              <div className="mt-8">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-2">Our Farm Story</p>
+                <p className="text-emerald-50 max-w-2xl text-lg leading-relaxed opacity-90 italic border-l-4 border-emerald-400 pl-6 py-2">
+                  "{farmer.about}"
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -176,8 +176,9 @@ const AgriDoctor = () => {
 
             // Use the OpenAI-powered crop health route (supports vision)
             const res = await axios.post('http://localhost:5000/api/ai-crop-health/answer', {
-                queryText: 'Identify the crop disease in this image and provide detailed treatment and prevention steps.',
+                queryText: (input ? `${input}. ` : '') + 'Identify the crop disease in this image and provide detailed treatment and prevention steps.',
                 image: base64,
+                imageName: selectedImage?.name || '',
                 userId: JSON.parse(localStorage.getItem('user') || '{}')?.id
             }, {
                 headers: {

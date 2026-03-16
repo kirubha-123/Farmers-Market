@@ -74,9 +74,15 @@ function FarmersPage() {
 
               {/* Farmer Details */}
               <div className="p-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors">
+                <h3 className="text-2xl font-bold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors line-clamp-1">
                   {farmer.name}
                 </h3>
+                
+                {farmer.specialty && (
+                  <p className="text-emerald-600 font-bold text-xs uppercase tracking-widest mb-3">
+                    {farmer.specialty}
+                  </p>
+                )}
                 
                 {/* Location */}
                 <div className="flex items-center text-emerald-700 mb-4">
@@ -101,11 +107,14 @@ function FarmersPage() {
                   </p>
                 )}
 
-                {/* CTA Button */}
+                {/* Stats row */}
                 <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-                  <span className="text-sm text-gray-500">Verified Farmer</span>
-                  <span className="text-emerald-600 font-semibold text-lg group-hover:text-emerald-700 transition-colors">
-                    View Profile →
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Member Since</span>
+                    <span className="text-sm font-bold text-emerald-800">{new Date(farmer.createdAt).getFullYear()}</span>
+                  </div>
+                  <span className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-xs font-black group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
+                    VIEW PROFILE
                   </span>
                 </div>
               </div>

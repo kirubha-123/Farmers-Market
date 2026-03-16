@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const farmers = await User.find({ role: 'farmer' })
-      .select('name email location phone about avatar createdAt')
+      .select('name email location phone about avatar specialty createdAt')
       .sort({ createdAt: -1 })
       .lean();
     
