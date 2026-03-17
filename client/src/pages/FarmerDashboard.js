@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import VoiceInput from '../components/VoiceInput';
@@ -36,7 +36,9 @@ function FarmerDashboard() {
     }
   }, []);
 
-  // 🚀 NEW: Smart Voice Auto-fill Handler
+
+
+  // 🚀 MISSION CRITICAL: Smart Voice Auto-fill Handler
   const handleSmartVoiceFill = useCallback((parsed) => {
     console.log('🗣️ Smart Voice Result:', parsed);
 
@@ -58,15 +60,6 @@ function FarmerDashboard() {
     }
     if (parsed.smartData.description) {
       setFormData(prev => ({ ...prev, description: parsed.smartData.description }));
-    }
-
-    // Success feedback
-    if (parsed.confidence > 0) {
-      const fields = Object.keys(parsed.smartData).length;
-      console.log(`✅ Auto-filled ${fields} fields!`);
-    } else {
-      // Fallback
-      setFormData(prev => ({ ...prev, name: parsed.rawText }));
     }
   }, []);
 
@@ -362,7 +355,7 @@ function FarmerDashboard() {
         {/* AI Services Section (SEPARATE SCREENS) */}
         <section className="mb-10">
           <h2 className="text-lg font-black text-emerald-900 mb-5 flex items-center gap-2">
-            <Sparkles className="text-emerald-600" size={20} /> AI Farmer Services
+            ✨ AI Farmer Services
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {/* Doctor Card */}
@@ -581,18 +574,15 @@ function FarmerDashboard() {
             </div>
 
             <form onSubmit={showEditModal ? handleUpdateSubmit : handleAddSubmit} className="p-6 space-y-4">
-              {/* 🚀 PREMIUM AI TAMIL VOICE BOX */}
-              <div className="bg-gradient-to-br from-indigo-50 via-white to-emerald-50 p-6 rounded-[2rem] border-2 border-indigo-100 shadow-xl overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-200/20 rounded-full -translate-y-16 translate-x-16 blur-3xl text-center" />
-
-                <div className="text-center mb-5">
-                  <h3 className="text-xl font-black text-indigo-900 flex items-center justify-center gap-2">
-                    <Sparkles className="text-indigo-600" size={20} />
-                    AI Tamil Voice Assistant
-                  </h3>
-                  <div className="mt-2 text-[11px] font-bold text-indigo-600/70 leading-relaxed">
-                    Say: <span className="text-indigo-900 font-extrabold italic">"உருளைக்கிழங்கு கிலோ 70 பெரம்பலூர்"</span><br />
-                    <span className="text-[10px] opacity-60">→ Gets "Fresh Potato, ₹70/kg, Perambalur"</span>
+              {/* 🚀 MISSION CRITICAL: AI VOICE FILL */}
+              <div className="bg-gradient-to-br from-indigo-50 to-white p-5 rounded-3xl border-2 border-indigo-100 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-200">
+                    <Sparkles className="text-white" size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-indigo-900 leading-tight">AI Smart Fill</h4>
+                    <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider">Powered by Tamil NLP</p>
                   </div>
                 </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { api, BASE_URL } from '../api';
 import Navbar from '../components/Navbar';
 import { Link } from 'react-router-dom';
@@ -7,6 +7,36 @@ function ProductList() {
   const [products, setProducts] = useState([]);
   const [query, setQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
+
+  const startVoiceSearch = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice search is not supported. Please use Chrome.');
+      return;
+    }
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (e) => {
+      const spoken = e.results[0][0].transcript;
+      setQuery(spoken);
+    };
+    recognition.onerror = (e) => {
+      console.warn('Voice error:', e.error);
+      setIsListening(false);
+    };
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
 
   useEffect(() => {
     api
@@ -70,22 +100,28 @@ function ProductList() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+            <button
+              onClick={startVoiceSearch}
+              title={isListening ? 'Stop listening' : 'Voice search'}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '18px',
+                padding: '2px 4px',
+                color: isListening ? '#ef4444' : '#10b981',
+                transition: 'color 0.3s'
+              }}
+            >
+              {isListening ? '🔴' : '🎤'}
+            </button>
           </div>
-          <button
-            onClick={() => {
-              const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
-              if (sr) {
-                const rec = new sr();
-                rec.onresult = (e) => setQuery(e.results[0][0].transcript);
-                rec.start();
-              }
-            }}
-            className="p-3 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 transition shadow-md"
-            title="Search by voice"
-          >
-            🎙️
-          </button>
         </div>
+        {isListening && (
+          <p className="text-center mt-2 text-red-500 text-sm font-bold animate-pulse">
+            🎙️ Listening... Say a crop or vegetable name
+          </p>
+        )}
       </section>
 
       {/* content */}

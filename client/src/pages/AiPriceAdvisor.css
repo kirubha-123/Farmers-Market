@@ -27,6 +27,7 @@
     margin-bottom: 0.5rem;
     background: linear-gradient(to right, #fff, #ddd);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -36,41 +37,23 @@
     margin-bottom: 2rem;
 }
 
-.voice-section {
-    margin: 2rem 0;
+.search-section {
+    margin-top: 1.5rem;
+    width: 100%;
 }
 
-.mic-button {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: none;
-    background: #ff4b2b;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
+.price-search-input {
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
 }
 
-.mic-button:hover {
-    transform: scale(1.05);
-    background: #ff416c;
+.price-search-input:focus {
+    border-color: #4f46e5 !important;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
-.mic-button.listening {
-    animation: pulse-red 1.5s infinite;
-    background: #ff416c;
-}
-
-@keyframes pulse-red {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.7); }
-    70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(255, 75, 43, 0); }
-    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 75, 43, 0); }
+.price-search-btn:hover {
+    background: #4338ca !important;
+    transform: translateY(-1px);
 }
 
 .transcript-area {
@@ -80,6 +63,7 @@
     border-radius: 12px;
     font-style: italic;
     min-height: 50px;
+    color: #fff;
 }
 
 .result-section {

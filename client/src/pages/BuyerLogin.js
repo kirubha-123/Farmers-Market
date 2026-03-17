@@ -61,6 +61,13 @@ function BuyerLogin() {
       <div className="w-full max-w-md px-4 py-8">
         {/* top bar */}
         <div className="flex items-center justify-between mb-6">
+          <button 
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1 text-emerald-700 hover:text-emerald-800 font-bold text-sm"
+          >
+            ← Back
+          </button>
           <div className="h-10 w-10 rounded-full bg-emerald-700 flex items-center justify-center text-white text-xl">
             🌿
           </div>

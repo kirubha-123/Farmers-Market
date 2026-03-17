@@ -37,7 +37,14 @@ function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 relative">
+      <button 
+        type="button"
+        onClick={() => navigate(-1)}
+        className="absolute top-6 left-6 text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
+      >
+        ← Back
+      </button>
       <form
         onSubmit={handleSubmit}
         className="bg-slate-800 p-6 rounded-xl w-full max-w-sm"

@@ -52,21 +52,45 @@ function Navbar() {
   return (
     <header className="border-b border-emerald-100 bg-white sticky top-0 z-50">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-        {/* logo */}
-        <div
-          className="flex items-center gap-2 cursor-pointer"
-          onClick={() => navigate('/')}
-        >
-          <div className="h-8 w-8 rounded-full bg-emerald-700 flex items-center justify-center text-white text-lg">
-            🌿
+        {/* logo + back button */}
+        <div className="flex items-center gap-4">
+          {location.pathname !== '/' && (
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 hover:bg-emerald-50 rounded-full text-emerald-700 transition-colors flex items-center gap-1"
+              title="Go Back"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-5 w-5" 
+                viewBox="0 0 20 20" 
+                fill="currentColor"
+              >
+                <path 
+                  fillRule="evenodd" 
+                  d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" 
+                  clipRule="evenodd" 
+                />
+              </svg>
+              <span className="text-xs font-bold hidden sm:inline">Back</span>
+            </button>
+          )}
+
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => navigate('/')}
+          >
+            <div className="h-8 w-8 rounded-full bg-emerald-700 flex items-center justify-center text-white text-lg">
+              🌿
+            </div>
+            <span className="font-semibold text-emerald-900 text-sm sm:text-base">
+              FarmDirect
+            </span>
           </div>
-          <span className="font-semibold text-emerald-900 text-sm sm:text-base">
-            FarmDirect
-          </span>
         </div>
 
         {/* center nav links */}
-        <nav className="hidden md:flex gap-4 text-sm">
+        <nav className="hidden lg:flex gap-4 text-sm">
           <button className={linkClass('/')} onClick={() => navigate('/')}>
             Home
           </button>
@@ -82,18 +106,24 @@ function Navbar() {
           >
             Farmers
           </button>
-          <button
-            className={linkClass('/agri-doctor')}
-            onClick={() => navigate('/agri-doctor')}
-          >
-            Agri-Doctor
-          </button>
-          <button
-            className={linkClass('/ai-price')}
-            onClick={() => navigate('/ai-price')}
-          >
-            Market Rates
-          </button>
+          
+          {/* ✅ ONLY FOR FARMERS: Predictions & Advice */}
+          {localStorage.getItem('role') === 'farmer' && (
+            <>
+              <button
+                className={linkClass('/agri-doctor')}
+                onClick={() => navigate('/agri-doctor')}
+              >
+                Agri-Doctor
+              </button>
+              <button
+                className={linkClass('/ai-price')}
+                onClick={() => navigate('/ai-price')}
+              >
+                Market Rates
+              </button>
+            </>
+          )}
         </nav>
 
         {/* right icons + logout */}

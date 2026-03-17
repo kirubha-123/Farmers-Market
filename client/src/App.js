@@ -14,7 +14,7 @@ import FarmerDashboard from './pages/FarmerDashboard';
 import FarmerProfile from './pages/FarmerProfile';
 import ProductDetail from './ProductDetail';
 
-import VoiceUI from './components/VoiceUI';
+
 import AiPriceAdvisor from './pages/AiPriceAdvisor';
 import AiCropHealth from './pages/AiCropHealth';
 import AgriDoctor from './pages/AgriDoctor';
@@ -84,9 +84,6 @@ function App() {
         <Route path="/messages" element={<Messages />} />
         <Route path="/messages/:userId" element={<Messages />} />
       </Routes>
-
-      {/* 🚀 Global AgriForge Voice UI */}
-      <VoiceUI />
     </div>
   );
 }

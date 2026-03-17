@@ -96,44 +96,16 @@
     transform: translateY(-5px);
 }
 
-.action-btn.mic { background: #10b981; color: white; border: none; }
-.action-btn.mic:hover { background: #059669; }
+.action-btn.upload { background: #f8fafc; color: #64748b; }
+.action-btn.camera-alt { background: #10b981; color: white; border: none; }
+.action-btn.camera-alt:hover { background: #059669; }
 
-.weather-context {
-    background: #f8fafc;
-    border-radius: 20px;
-    padding: 15px 25px;
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 2rem;
-    font-weight: 800;
-    font-size: 13px;
-    color: #64748b;
+.search-shortcut input::placeholder {
+    color: #94a3b8;
 }
 
-.w-item { display: flex; align-items: center; gap: 8px; }
-.w-item.location { color: #10b981; }
-
-.mic-shortcut {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.mic-circle {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: #f3f4f6;
-    border: none;
-    margin-bottom: 10px;
-    font-size: 20px;
-    cursor: pointer;
-}
-
-.mic-circle.active {
-    background: #ef4444;
-    color: white;
-    animation: shake 0.5s infinite;
+.search-shortcut button:active {
+    transform: scale(0.98);
 }
 
 .pro-report {

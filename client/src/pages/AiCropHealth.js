@@ -3,10 +3,19 @@ import axios from 'axios';
 import { API_URL } from '../api';
 import { Link } from 'react-router-dom';
 import { Camera, Image as ImageIcon, History, Cloud, CheckCircle2, AlertTriangle, ThermometerSun, Droplets, Wind, Sparkles, Navigation } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './AiCropHealth.css';
 
 const AiCropHealth = () => {
-    const [isListening, setIsListening] = useState(false);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const role = localStorage.getItem('role');
+        if (role !== 'farmer') {
+            navigate('/');
+        }
+    }, [navigate]);
+
     const [transcript, setTranscript] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
@@ -17,9 +26,40 @@ const AiCropHealth = () => {
     const [historyData, setHistoryData] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
     const [user, setUser] = useState(null);
+    const [isListening, setIsListening] = useState(false);
 
-    const recognitionRef = useRef(null);
     const fileInputRef = useRef(null);
+    const recognitionRef = useRef(null);
+
+    const startVoiceInput = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert('Voice input is not supported. Please use Chrome.');
+            return;
+        }
+        if (isListening) {
+            recognitionRef.current?.stop();
+            return;
+        }
+        const recognition = new SpeechRecognition();
+        recognition.lang = listenLang;
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognition.onstart = () => setIsListening(true);
+        recognition.onresult = (e) => {
+            const spoken = e.results[0][0].transcript;
+            setTranscript(spoken);
+            // Auto-analyze after voice input
+            processDiagnosis(spoken, null);
+        };
+        recognition.onerror = (e) => {
+            console.warn('Voice error:', e.error);
+            setIsListening(false);
+        };
+        recognition.onend = () => setIsListening(false);
+        recognitionRef.current = recognition;
+        recognition.start();
+    };
 
     useEffect(() => {
         // Auth check
@@ -28,22 +68,7 @@ const AiCropHealth = () => {
             setUser(storedUser);
             fetchHistory(storedUser.id || storedUser._id);
         }
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            recognitionRef.current = new SpeechRecognition();
-            recognitionRef.current.continuous = false;
-            recognitionRef.current.lang = listenLang;
-
-            recognitionRef.current.onresult = (event) => {
-                const text = event.results[0][0].transcript;
-                setTranscript(text);
-                processDiagnosis(text, null);
-            };
-
-            recognitionRef.current.onend = () => setIsListening(false);
-        }
-    }, [listenLang]);
+    }, []);
 
     const fetchHistory = async (uid) => {
         try {
@@ -103,9 +128,9 @@ const AiCropHealth = () => {
                     </div>
 
                     <div className="action-grid">
-                        <button className={`action-btn mic ${isListening ? 'active' : ''}`} onClick={() => isListening ? recognitionRef.current.stop() : setIsListening(true) || recognitionRef.current.start()}>
-                            {isListening ? <AlertTriangle className="animate-pulse" /> : <Camera size={24} />}
-                            <span>Camera Analysis</span>
+                        <button className="action-btn camera-alt" onClick={() => navigate('/agri-doctor')}>
+                            <Camera size={24} />
+                            <span>Agri-Doctor Chat</span>
                         </button>
                         
                         <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" hidden />
@@ -129,11 +154,47 @@ const AiCropHealth = () => {
                     <div className="w-item location"><Navigation size={14}/> <span>Perambalur, TN</span></div>
                 </div>
 
-                <div className="mic-shortcut">
-                    <button className={`mic-circle ${isListening ? 'active' : ''}`} onClick={() => isListening ? recognitionRef.current.stop() : setIsListening(true) || recognitionRef.current.start()}>
-                        {isListening ? '⏹️' : '🎤'}
-                    </button>
-                    <p className="status-text">{isListening ? 'Analyzing Audio...' : (transcript || 'Tap to ask about plant symptoms')}</p>
+                <div className="search-shortcut" style={{marginBottom: '20px'}}>
+                    <div style={{display: 'flex', gap: '8px', background: 'white', padding: '8px', borderRadius: '16px', border: '2px solid #f0fdf4', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)'}}>
+                        <input 
+                            type="text"
+                            placeholder={viewLang === 'ta' ? "பயிரின் அறிகுறிகளை உள்ளிடவும்..." : "Describe plant symptoms..."}
+                            value={transcript}
+                            onChange={(e) => setTranscript(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && transcript.trim() && processDiagnosis(transcript, null)}
+                            style={{flex: 1, border: 'none', outline: 'none', padding: '10px 15px', fontSize: '15px'}}
+                        />
+                        <button 
+                            onClick={startVoiceInput}
+                            title={isListening ? 'Stop listening' : 'Voice input (Tamil/English)'}
+                            style={{
+                                background: isListening ? '#ef4444' : '#6366f1',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '10px',
+                                padding: '8px 14px',
+                                fontSize: '18px',
+                                cursor: 'pointer',
+                                boxShadow: isListening ? '0 0 0 4px rgba(239,68,68,0.3)' : 'none',
+                                transition: 'all 0.3s'
+                            }}
+                        >
+                            {isListening ? '🔴' : '🎤'}
+                        </button>
+                        <button 
+                            onClick={() => transcript.trim() && processDiagnosis(transcript, null)}
+                            style={{background: '#10b981', color: 'white', border: 'none', borderRadius: '10px', padding: '8px 20px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s'}}
+                            onMouseOver={(e) => e.currentTarget.style.background = '#059669'}
+                            onMouseOut={(e) => e.currentTarget.style.background = '#10b981'}
+                        >
+                            {viewLang === 'ta' ? 'ஆராய்' : 'Analyze'}
+                        </button>
+                    </div>
+                    {isListening && (
+                        <p style={{color: '#ef4444', fontWeight: 'bold', marginTop: '8px', fontSize: '13px'}}>
+                            🎙️ {viewLang === 'ta' ? 'கேட்கிறது... அறிகுறிகளைச் சொல்லுங்கள்' : 'Listening... Describe your crop symptoms'}
+                        </p>
+                    )}
                 </div>
 
                 {loading && (

@@ -1,14 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_URL } from '../api';
+import { useNavigate } from 'react-router-dom';
 import './AgriDoctor.css';
 
 const AgriDoctor = () => {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const role = localStorage.getItem('role');
+        if (role !== 'farmer') {
+            navigate('/');
+        }
+    }, [navigate]);
     const [messages, setMessages] = useState([
         { role: 'ai', text: 'வணக்கம்! நான் உங்கள் விவசாய மருத்துவர். உங்கள் பயிர் பிரச்சனைகளை என்னிடம் சொல்லுங்கள்.', lang: 'ta' }
     ]);
     const [input, setInput] = useState('');
     const [isListening, setIsListening] = useState(false);
+
     const [history, setHistory] = useState([
         { crop: 'Tomato', diagnosis: 'Early Blight', date: 'Oct 12' },
         { crop: 'Rice', diagnosis: 'Leaf Blast', date: 'Oct 08' }
@@ -19,30 +29,43 @@ const AgriDoctor = () => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
-    
-    const recognitionRef = useRef(null);
+
     const scrollRef = useRef(null);
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const activeStreamRef = useRef(null);
+    const recognitionRef = useRef(null);
     const analyzingRef = useRef(false); // 🔒 prevents duplicate analysis calls
 
-    useEffect(() => {
+    const startVoiceInput = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            recognitionRef.current = new SpeechRecognition();
-            recognitionRef.current.continuous = false;
-            recognitionRef.current.lang = 'ta-IN';
-
-            recognitionRef.current.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                sendMessage(transcript);
-                setIsListening(false);
-            };
-
-            recognitionRef.current.onend = () => setIsListening(false);
+        if (!SpeechRecognition) {
+            alert('Voice input is not supported in this browser. Please use Chrome.');
+            return;
         }
-    }, []);
+        if (isListening) {
+            recognitionRef.current?.stop();
+            return;
+        }
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ta-IN'; // Tamil first; user can speak English too
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognition.onstart = () => setIsListening(true);
+        recognition.onresult = (e) => {
+            const spoken = e.results[0][0].transcript;
+            setInput(prev => prev ? prev + ' ' + spoken : spoken);
+        };
+        recognition.onerror = (e) => {
+            console.warn('Voice error:', e.error);
+            setIsListening(false);
+        };
+        recognition.onend = () => setIsListening(false);
+        recognitionRef.current = recognition;
+        recognition.start();
+    };
+
+
 
     useEffect(() => {
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -224,14 +247,7 @@ const AgriDoctor = () => {
         }
     };
 
-    const toggleListening = () => {
-        if (isListening) {
-            recognitionRef.current.stop();
-        } else {
-            setIsListening(true);
-            recognitionRef.current.start();
-        }
-    };
+
 
     const startCamera = () => {
         if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
@@ -415,9 +431,6 @@ const AgriDoctor = () => {
                         <button className="doc-btn camera-btn" title="Take Photo" onClick={startCamera}>
                             📸
                         </button>
-                        <button className={`doc-btn mic-btn ${isListening ? 'active' : ''}`} title="Voice Search" onClick={toggleListening}>
-                            {isListening ? '⏹️' : '🎤'}
-                        </button>
                         <div className="input-wrapper">
                             <input 
                                 placeholder="மஞ்சள் இலைகளைப் பற்றி என்னிடம் கேளுங்கள்..." 
@@ -426,6 +439,27 @@ const AgriDoctor = () => {
                                 onKeyPress={(e) => e.key === 'Enter' && sendMessage(input)}
                             />
                         </div>
+                        <button 
+                            className={`doc-btn mic-btn ${isListening ? 'listening' : ''}`} 
+                            title={isListening ? 'Stop Listening' : 'Voice Input (Tamil/English)'}
+                            onClick={startVoiceInput}
+                            style={{
+                                background: isListening ? '#ef4444' : '#10b981',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '50%',
+                                width: '40px',
+                                height: '40px',
+                                fontSize: '18px',
+                                cursor: 'pointer',
+                                boxShadow: isListening ? '0 0 0 4px rgba(239,68,68,0.3)' : 'none',
+                                transition: 'all 0.3s',
+                                animation: isListening ? 'pulse-mic 1s infinite' : 'none',
+                                flexShrink: 0
+                            }}
+                        >
+                            {isListening ? '🔴' : '🎤'}
+                        </button>
                         <button className="doc-btn send-btn" onClick={() => sendMessage(input)}>➤</button>
                     </div>
                 </main>
