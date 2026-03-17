@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import Navbar from '../components/Navbar';
 import './MyOrders.css'; // Reusing styles
 
 const FarmerOrders = () => {
@@ -52,7 +51,6 @@ const FarmerOrders = () => {
 
     return (
         <div className="orders-wrapper">
-            <Navbar />
             <div className="orders-container">
                 <h1>Incoming Orders</h1>
                 {loading ? (

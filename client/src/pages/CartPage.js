@@ -49,7 +49,7 @@ function CartPage() {
     const token = localStorage.getItem('token');
     if (!token) {
         alert('Please login to place an order');
-        navigate('/buyer-login'); // Use specific login
+      navigate('/login');
         return;
     }
     navigate('/checkout-address');
@@ -57,7 +57,6 @@ function CartPage() {
 
   return (
     <div className="min-h-screen bg-emerald-50">
-      <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 py-8 grid gap-6 lg:grid-cols-[2fr,1fr]">
         {/* left: items */}

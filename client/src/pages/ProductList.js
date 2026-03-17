@@ -1,12 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { api, BASE_URL } from '../api';
-import Navbar from '../components/Navbar';
 import { Link } from 'react-router-dom';
 
 function ProductList() {
   const [products, setProducts] = useState([]);
   const [query, setQuery] = useState('');
-  const [locationFilter, setLocationFilter] = useState('all');
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
 
@@ -49,10 +47,7 @@ function ProductList() {
     const matchesQuery =
       p.name.toLowerCase().includes(query.toLowerCase()) ||
       (p.description || '').toLowerCase().includes(query.toLowerCase());
-    const matchesLocation =
-      locationFilter === 'all' ||
-      (p.location || '').toLowerCase().includes(locationFilter.toLowerCase());
-    return matchesQuery && matchesLocation;
+    return matchesQuery;
   });
 
   const addToCart = (product) => {
@@ -79,8 +74,6 @@ function ProductList() {
 
   return (
     <div className="min-h-screen bg-emerald-50">
-      <Navbar />
-
       {/* page header */}
       <section className="mx-auto max-w-6xl px-4 py-8">
         <h1 className="text-3xl font-semibold text-center text-emerald-900">
@@ -125,41 +118,7 @@ function ProductList() {
       </section>
 
       {/* content */}
-      <main className="mx-auto max-w-6xl px-4 pb-10 grid grid-cols-1 md:grid-cols-[220px,1fr] gap-6">
-        {/* filters */}
-        <aside className="bg-white rounded-2xl border border-emerald-100 p-4 h-fit sticky top-4">
-          <h2 className="text-sm font-semibold text-emerald-900 mb-4">
-            Filters
-          </h2>
-
-          <div className="mb-4">
-            <p className="text-xs text-emerald-900/70 mb-1">Location</p>
-            <select
-              className="w-full border border-emerald-100 rounded-lg px-2 py-1.5 text-sm bg-emerald-50 outline-none"
-              value={locationFilter}
-              onChange={(e) => setLocationFilter(e.target.value)}
-            >
-              <option value="all">All locations</option>
-              {Array.from(new Set(products.map((p) => p.location))).map(
-                (loc) =>
-                  loc && (
-                    <option key={loc} value={loc}>
-                      {loc}
-                    </option>
-                  )
-              )}
-            </select>
-          </div>
-
-          <div>
-            <p className="text-xs text-emerald-900/70 mb-1">Price Range</p>
-            <input type="range" min="0" max="500" className="w-full accent-emerald-600" />
-            <p className="text-[11px] text-emerald-900/60 mt-1">
-              Visual only; real filter can be added later.
-            </p>
-          </div>
-        </aside>
-
+      <main className="mx-auto max-w-6xl px-4 pb-10">
         {/* products grid */}
         <section>
           <p className="text-xs text-emerald-900/70 mb-3">
@@ -259,10 +218,10 @@ function ProductList() {
                 <div className="text-emerald-900/50">
                   <p className="text-lg mb-2">No products match your search.</p>
                   <button
-                    onClick={() => { setQuery(''); setLocationFilter('all') }}
+                    onClick={() => { setQuery('') }}
                     className="px-6 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition"
                   >
-                    Clear all filters
+                    Clear search
                   </button>
                 </div>
               </div>

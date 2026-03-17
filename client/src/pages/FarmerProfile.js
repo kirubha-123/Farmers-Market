@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
 import { api, BASE_URL } from '../api';
 
 function FarmerProfile() {
@@ -51,7 +50,6 @@ function FarmerProfile() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
 
       {/* Header / Profile Card */}
       <div className="bg-emerald-600 text-white py-12">

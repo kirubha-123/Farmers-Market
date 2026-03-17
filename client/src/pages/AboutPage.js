@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 function About() {
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
-      <Navbar />
 
       <main>
         {/* Section 1 */}

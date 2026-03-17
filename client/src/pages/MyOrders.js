@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import Navbar from '../components/Navbar';
 import './MyOrders.css';
 
 const MyOrders = () => {
@@ -38,7 +37,6 @@ const MyOrders = () => {
 
     return (
         <div className="orders-wrapper">
-            <Navbar />
             <div className="orders-container">
                 <h1>My Orders</h1>
                 {loading ? (

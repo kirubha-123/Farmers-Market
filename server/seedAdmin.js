@@ -10,29 +10,37 @@ const createAdmin = async () => {
         await mongoose.connect(process.env.MONGODB_URI);
         console.log('✅ Connected to MongoDB');
 
-        const email = 'admin@agriconnect.com';
-        const password = 'admin123';
-        
-        const existingAdmin = await User.findOne({ email });
-        if (existingAdmin) {
-            console.log('⚠️ Admin user already exists');
-            process.exit(0);
-        }
+        const email = process.env.ADMIN_EMAIL;
+        const password = process.env.ADMIN_PASSWORD;
+        const name = process.env.ADMIN_NAME || 'System Admin';
+        const phone = process.env.ADMIN_PHONE || '9999999999';
+        const location = process.env.ADMIN_LOCATION || 'Chennai';
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        if (!email || !password) {
+            console.error('❌ ADMIN_EMAIL and ADMIN_PASSWORD are required in environment variables');
+            process.exit(1);
+        }
         
-        await User.create({
-            name: 'System Admin',
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const adminData = {
+            name,
             email: email,
             password: hashedPassword,
             role: 'admin',
-            phone: '9999999999',
-            location: 'Chennai'
-        });
+            phone,
+            location
+        };
 
-        console.log('🚀 Admin user created successfully!');
+        const result = await User.findOneAndUpdate(
+            { email },
+            { $set: adminData },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        const action = result ? 'created/updated' : 'processed';
+        console.log(`🚀 Admin user ${action} successfully!`);
         console.log(`Email: ${email}`);
-        console.log(`Password: ${password}`);
         process.exit(0);
     } catch (err) {
         console.error('❌ Error creating admin:', err.message);

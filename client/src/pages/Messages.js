@@ -21,7 +21,7 @@ const Messages = () => {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
-      navigate('/buyer-login');
+      navigate('/login');
       return;
     }
     setCurrentUser(user);

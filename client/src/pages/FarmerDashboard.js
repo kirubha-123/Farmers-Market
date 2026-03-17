@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
 import VoiceInput from '../components/VoiceInput';
 import { api, BASE_URL } from '../api';
 import { Sparkles } from 'lucide-react';
@@ -304,7 +303,6 @@ function FarmerDashboard() {
 
   return (
     <div className="min-h-screen bg-emerald-50">
-      <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 py-6">
         {error && (

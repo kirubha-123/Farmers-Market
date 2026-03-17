@@ -1,33 +1,32 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated, logout, user, role } = useAuth();
   const [unreadCounts, setUnreadCounts] = useState({ notifs: 0, messages: 0 });
-  const token = localStorage.getItem('token');
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
-    if (token) {
+    if (isAuthenticated) {
       fetchUnreadCounts();
-      const interval = setInterval(fetchUnreadCounts, 30000); // Poll every 30s
+      const interval = setInterval(fetchUnreadCounts, 30000);
       return () => clearInterval(interval);
     }
-  }, [token]);
+  }, [isAuthenticated]);
 
   const fetchUnreadCounts = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
       const [notifRes, msgRes] = await Promise.all([
-        api.get('/notifications', { headers: { Authorization: `Bearer ${token}` } }),
-        api.get('/messages/unread/count', { headers: { Authorization: `Bearer ${token}` } })
-      ]);
+        api.get('/notifications', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+        api.get('/messages/unread/count', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+      ]).catch(() => [{ data: [] }, { data: { count: 0 } }]);
 
-      const notifUnread = notifRes.data.filter(n => !n.read).length;
-      const msgUnread = msgRes.data.count || 0;
+      const notifUnread = notifRes?.data?.filter?.(n => !n.read)?.length || 0;
+      const msgUnread = msgRes?.data?.count || 0;
       
       setUnreadCounts({ notifs: notifUnread, messages: msgUnread });
     } catch (err) {
@@ -43,16 +42,24 @@ function Navbar() {
     }`;
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('user');
-    navigate('/');
+    if (window.confirm('Are you sure you want to logout?')) {
+      logout();
+      navigate('/');
+      setShowMobileMenu(false);
+    }
   };
+
+  // Hide navbar on auth pages
+  const hideNavbar = ['/login', '/register-buyer', '/register-farmer'].includes(location.pathname);
+
+  if (hideNavbar && !isAuthenticated) {
+    return null;
+  }
 
   return (
     <header className="border-b border-emerald-100 bg-white sticky top-0 z-50">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-        {/* logo + back button */}
+        {/* Logo section */}
         <div className="flex items-center gap-4">
           {location.pathname !== '/' && (
             <button
@@ -89,17 +96,19 @@ function Navbar() {
           </div>
         </div>
 
-        {/* center nav links */}
+        {/* Center navigation links */}
         <nav className="hidden lg:flex gap-4 text-sm">
           <button className={linkClass('/')} onClick={() => navigate('/')}>
             Home
           </button>
-          <button
-            className={linkClass('/market')}
-            onClick={() => navigate('/market')}
-          >
-            Marketplace
-          </button>
+          {isAuthenticated && (
+            <button
+              className={linkClass('/market')}
+              onClick={() => navigate('/market')}
+            >
+              Marketplace
+            </button>
+          )}
           <button
             className={linkClass('/farmers')}
             onClick={() => navigate('/farmers')}
@@ -107,8 +116,8 @@ function Navbar() {
             Farmers
           </button>
           
-          {/* ✅ ONLY FOR FARMERS: Predictions & Advice */}
-          {localStorage.getItem('role') === 'farmer' && (
+          {/* Farmer-only features */}
+          {role === 'farmer' && (
             <>
               <button
                 className={linkClass('/agri-doctor')}
@@ -124,64 +133,213 @@ function Navbar() {
               </button>
             </>
           )}
+
+          {/* Admin-only features */}
+          {role === 'admin' && (
+            <button
+              className={linkClass('/admin-dashboard')}
+              onClick={() => navigate('/admin-dashboard')}
+            >
+              Admin
+            </button>
+          )}
         </nav>
 
-        {/* right icons + logout */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/messages')}
-            className="text-emerald-900/80 hover:text-emerald-900 text-xl relative"
-            title="Messages"
-          >
-            💬
-            {unreadCounts.messages > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] h-4 w-4 flex items-center justify-center rounded-full animate-pulse border-2 border-white">
-                {unreadCounts.messages > 9 ? '9+' : unreadCounts.messages}
-              </span>
-            )}
-          </button>
+        {/* Right section - Icons & Auth */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          {isAuthenticated ? (
+            <>
+              {/* Messages */}
+              <button
+                onClick={() => navigate('/messages')}
+                className="text-emerald-900/80 hover:text-emerald-900 text-xl relative"
+                title="Messages"
+              >
+                💬
+                {unreadCounts.messages > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] h-4 w-4 flex items-center justify-center rounded-full animate-pulse border-2 border-white">
+                    {unreadCounts.messages > 9 ? '9+' : unreadCounts.messages}
+                  </span>
+                )}
+              </button>
 
-          <button
-            onClick={() => {
-              const role = localStorage.getItem('role');
-              if (role === 'farmer') navigate('/farmer-orders');
-              else navigate('/my-orders');
-            }}
-            className="text-emerald-900/80 hover:text-emerald-900 text-xl relative"
-            title="Orders & Notifications"
-          >
-            🔔
-            {unreadCounts.notifs > 0 && (
-              <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[8px] h-4 w-4 flex items-center justify-center rounded-full animate-pulse border-2 border-white">
-                {unreadCounts.notifs > 9 ? '9+' : unreadCounts.notifs}
-              </span>
-            )}
-          </button>
+              {/* Orders/Notifications */}
+              <button
+                onClick={() => {
+                  if (role === 'farmer') navigate('/farmer-orders');
+                  else navigate('/my-orders');
+                }}
+                className="text-emerald-900/80 hover:text-emerald-900 text-xl relative"
+                title="Orders"
+              >
+                🔔
+                {unreadCounts.notifs > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[8px] h-4 w-4 flex items-center justify-center rounded-full animate-pulse border-2 border-white">
+                    {unreadCounts.notifs > 9 ? '9+' : unreadCounts.notifs}
+                  </span>
+                )}
+              </button>
 
-          <button
-            onClick={() => navigate('/cart')}
-            className="text-emerald-900/80 hover:text-emerald-900 text-xl"
-            title="Cart"
-          >
-            🛒
-          </button>
+              {/* Cart - Buyer only */}
+              {role === 'buyer' && (
+                <button
+                  onClick={() => navigate('/cart')}
+                  className="text-emerald-900/80 hover:text-emerald-900 text-xl"
+                  title="Cart"
+                >
+                  🛒
+                </button>
+              )}
 
-          <button
-            onClick={() => navigate('/profile')}
-            className="text-emerald-900/80 hover:text-emerald-900 text-xl"
-            title="My Profile"
-          >
-            👤
-          </button>
-          
-          <button
-            onClick={handleLogout}
-            className="hidden sm:block px-4 py-1.5 rounded-full bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm"
-          >
-            Logout
-          </button>
+              {/* Profile */}
+              <button
+                onClick={() => navigate('/profile')}
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-emerald-50 transition-colors"
+                title="Profile"
+              >
+                <span className="text-xl">👤</span>
+                <span className="text-sm font-medium text-emerald-900 hidden md:inline max-w-xs truncate">
+                  {user?.name || 'Profile'}
+                </span>
+              </button>
+
+              {/* Logout */}
+              <button
+                onClick={handleLogout}
+                className="hidden sm:block px-3 py-1.5 rounded-full bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm"
+              >
+                Logout
+              </button>
+
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="sm:hidden text-emerald-900"
+                title="Menu"
+              >
+                ☰
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Not logged in - show auth buttons */}
+              <button
+                onClick={() => navigate('/register-buyer')}
+                className="hidden sm:block px-3 py-1.5 rounded-full border border-emerald-600 text-emerald-600 text-sm font-medium hover:bg-emerald-50 transition-colors"
+              >
+                Buyer Register
+              </button>
+              <button
+                onClick={() => navigate('/login')}
+                className="hidden sm:block px-3 py-1.5 rounded-full bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigate('/register-farmer')}
+                className="hidden sm:block px-3 py-1.5 rounded-full border border-amber-500 text-amber-600 text-sm font-medium hover:bg-amber-50 transition-colors"
+              >
+                Farmer Register
+              </button>
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="sm:hidden text-emerald-900"
+                title="Menu"
+              >
+                ☰
+              </button>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Mobile menu */}
+      {showMobileMenu && (
+        <div className="lg:hidden border-t border-emerald-100 bg-emerald-50 px-4 py-3">
+          <div className="space-y-2">
+            <button
+              onClick={() => { navigate('/'); setShowMobileMenu(false); }}
+              className="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-100 text-emerald-900 text-sm"
+            >
+              Home
+            </button>
+            {isAuthenticated && (
+              <button
+                onClick={() => { navigate('/market'); setShowMobileMenu(false); }}
+                className="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-100 text-emerald-900 text-sm"
+              >
+                Marketplace
+              </button>
+            )}
+            <button
+              onClick={() => { navigate('/farmers'); setShowMobileMenu(false); }}
+              className="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-100 text-emerald-900 text-sm"
+            >
+              Farmers
+            </button>
+
+            {/* Farmer features */}
+            {role === 'farmer' && (
+              <>
+                <button
+                  onClick={() => { navigate('/agri-doctor'); setShowMobileMenu(false); }}
+                  className="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-100 text-emerald-900 text-sm"
+                >
+                  Agri-Doctor
+                </button>
+                <button
+                  onClick={() => { navigate('/ai-price'); setShowMobileMenu(false); }}
+                  className="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-100 text-emerald-900 text-sm"
+                >
+                  Market Rates
+                </button>
+              </>
+            )}
+
+            {/* Auth buttons for mobile */}
+            {!isAuthenticated && (
+              <>
+                <button
+                  onClick={() => { navigate('/login'); setShowMobileMenu(false); }}
+                  className="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-100 text-emerald-900 text-sm font-medium mt-3 border-t border-emerald-200 pt-3"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => { navigate('/register-buyer'); setShowMobileMenu(false); }}
+                  className="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-100 text-emerald-900 text-sm font-medium"
+                >
+                  Buyer Register
+                </button>
+                <button
+                  onClick={() => { navigate('/register-farmer'); setShowMobileMenu(false); }}
+                  className="block w-full text-left px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium"
+                >
+                  Farmer Register
+                </button>
+              </>
+            )}
+
+            {/* Profile for mobile */}
+            {isAuthenticated && (
+              <>
+                <button
+                  onClick={() => { navigate('/profile'); setShowMobileMenu(false); }}
+                  className="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-100 text-emerald-900 text-sm font-medium mt-3 border-t border-emerald-200 pt-3"
+                >
+                  👤 {user?.name || 'Profile'}
+                </button>
+                <button
+                  onClick={() => handleLogout()}
+                  className="block w-full text-left px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100"
+                >
+                  Logout
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

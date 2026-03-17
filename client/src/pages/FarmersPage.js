@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
 import Footer from '../components/Footer'; // Add if you have Footer
 import { api, BASE_URL } from '../api';
 
@@ -25,7 +24,6 @@ function FarmersPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center">
-        <Navbar />
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Loading our farmers...</p>
@@ -36,7 +34,6 @@ function FarmersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50">
-      <Navbar />
       
       {/* Hero Section */}
       <div className="bg-emerald-600 text-white py-20">
