@@ -1,7 +1,6 @@
 // src/ProductDetail.js - CORRECTED IMPORTS
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Navbar from './components/Navbar';        // ✅ FIXED: ./components/
 import Footer from './components/Footer';        // ✅ FIXED: ./components/
 import { api, BASE_URL } from './api';
 
@@ -75,7 +74,6 @@ function ProductDetail() {
 
   return (
     <div className="min-h-screen bg-emerald-50">
-      <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           {/* Image */}

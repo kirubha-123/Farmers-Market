@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_URL } from '../api';
 import { useNavigate } from 'react-router-dom';
-import Header from '../components/Navbar';
 import Footer from '../components/Footer';
 import './AiPriceAdvisor.css';
 
@@ -79,7 +78,6 @@ const AiPriceAdvisor = () => {
 
     return (
         <div className="min-h-screen bg-emerald-50">
-            <Header />
             <div className="ai-price-container py-12 px-4">
                 <div className="advisor-card mx-auto">
                     <h1 className="advisor-title">AgriForge AI</h1>

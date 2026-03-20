@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import Navbar from '../components/Navbar';
 import { api } from '../api';
 
 function formatDate(iso) {
@@ -35,8 +34,6 @@ function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-emerald-50">
-      <Navbar />
-
       <div className="mx-auto max-w-6xl px-4 py-8">
         <h1 className="text-xl font-semibold text-emerald-900 mb-1">
           My Orders

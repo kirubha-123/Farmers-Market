@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Send, MessageSquare } from 'lucide-react';
-import Navbar from '../components/Navbar';
 import { api } from '../api';
 import './Messages.css';
 
@@ -124,7 +123,6 @@ const Messages = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
       <div className="messages-container">
         {/* Sidebar */}
         <div className="conversations-sidebar">
