@@ -37,21 +37,26 @@ const authMiddleware = (req, res, next) => {
       name: decoded.name || null
     };
 
-    console.log('✅ Authenticated user:', req.user.id, req.user.role);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ Authenticated user:', req.user.id, req.user.role);
+    }
 
     next();
     
   } catch (err) {
-    console.error('❌ Auth error:', err.message);
-    
-    // ✅ Specific JWT errors
-    if (err.name === 'JsonWebTokenError') {
-      return res.status(401).json({ message: 'Invalid token signature.' });
-    }
+    // Expected in real-world usage when browser holds an old token.
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ message: 'Token expired. Please login again.' });
     }
-    
+
+    if (err.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token signature.' });
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('❌ Auth error:', err.message);
+    }
+
     res.status(401).json({ message: 'Authentication failed.' });
   }
 };

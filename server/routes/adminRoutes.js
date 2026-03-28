@@ -12,10 +12,10 @@ router.use(adminAuth);
  * @section USER MANAGEMENT
  */
 
-// GET /api/admin/users - List all farmers and buyers
+// GET /api/admin/users - List all users (farmer, buyer, admin)
 router.get('/users', async (req, res) => {
     try {
-        const users = await User.find({ role: { $ne: 'admin' } }).select('-password');
+        const users = await User.find({}).select('-password').sort({ createdAt: -1 });
         res.json(users);
     } catch (err) {
         res.status(500).json({ message: 'Error fetching users' });

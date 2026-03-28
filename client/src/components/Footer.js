@@ -54,15 +54,15 @@ function Footer() {
             <ul className="space-y-4 text-sm text-gray-500">
               <li className="flex items-center gap-3">
                 <span className="text-emerald-600">✉️</span>
-                <a href="mailto:hello@farmdirect.com" className="hover:text-emerald-600 transition">hello@farmdirect.com</a>
+                <a href="mailto:kirubhakirubha92@gmail.com" className="hover:text-emerald-600 transition">kirubhakirubha92@gmail.com</a>
               </li>
               <li className="flex items-center gap-3">
                 <span className="text-emerald-600">📞</span>
-                <a href="tel:+15551234567" className="hover:text-emerald-600 transition">+1 (555) 123-4567</a>
+                <a href="tel:+918148198241" className="hover:text-emerald-600 transition">+91 8148198241</a>
               </li>
               <li className="flex items-center gap-3">
                 <span className="text-emerald-600">📍</span>
-                <span>San Francisco, CA</span>
+                <span>Perambalur</span>
               </li>
             </ul>
           </div>

@@ -8,6 +8,8 @@
     "dev": "nodemon server.js",
     "build": "cd .. && npm run build",
     "seed:admin": "node seedAdmin.js",
+    "seed:market-demo": "node scripts/seedMarketDemoData.js",
+    "sync:market": "node scripts/syncMarketPrices.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

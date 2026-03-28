@@ -126,8 +126,8 @@ function Navbar() {
                 Agri-Doctor
               </button>
               <button
-                className={linkClass('/ai-price')}
-                onClick={() => navigate('/ai-price')}
+                className={linkClass('/market-prices')}
+                onClick={() => navigate('/market-prices')}
               >
                 Market Rates
               </button>
@@ -288,7 +288,7 @@ function Navbar() {
                   Agri-Doctor
                 </button>
                 <button
-                  onClick={() => { navigate('/ai-price'); setShowMobileMenu(false); }}
+                  onClick={() => { navigate('/market-prices'); setShowMobileMenu(false); }}
                   className="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-100 text-emerald-900 text-sm"
                 >
                   Market Rates

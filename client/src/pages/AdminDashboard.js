@@ -11,6 +11,7 @@ const AdminDashboard = () => {
     const [products, setProducts] = useState([]);
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedUser, setSelectedUser] = useState(null);
     const navigate = useNavigate();
     const userRole = localStorage.getItem('role');
     const token = localStorage.getItem('token');
@@ -188,12 +189,12 @@ const AdminDashboard = () => {
                                 </thead>
                                 <tbody>
                                     {users.map(user => (
-                                        <tr key={user._id}>
+                                        <tr key={user._id} onClick={() => setSelectedUser(user)} style={{ cursor: 'pointer' }} className="user-row-clickable">
                                             <td>{user.name}</td>
                                             <td>{user.email}</td>
                                             <td><span className={`role-badge ${user.role}`}>{user.role}</span></td>
                                             <td>{new Date(user.createdAt).toLocaleDateString()}</td>
-                                            <td>
+                                            <td onClick={(e) => e.stopPropagation()}>
                                                 <button className="delete-btn" onClick={() => handleDeleteUser(user._id)}>🗑️</button>
                                             </td>
                                         </tr>
@@ -249,6 +250,192 @@ const AdminDashboard = () => {
                     )}
                 </div>
             </main>
+
+            {/* User Detail Modal */}
+            {selectedUser && (
+                <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>User Details</h2>
+                            <button className="modal-close" onClick={() => setSelectedUser(null)}>&times;</button>
+                        </div>
+                        
+                        <div className="modal-body">
+                            <div className="detail-section">
+                                <h3>Basic Information</h3>
+                                <div className="detail-grid">
+                                    <div className="detail-item">
+                                        <label>Name</label>
+                                        <p>{selectedUser.name}</p>
+                                    </div>
+                                    <div className="detail-item">
+                                        <label>Email</label>
+                                        <p>{selectedUser.email}</p>
+                                    </div>
+                                    <div className="detail-item">
+                                        <label>Role</label>
+                                        <p><span className={`role-badge ${selectedUser.role}`}>{selectedUser.role}</span></p>
+                                    </div>
+                                    <div className="detail-item">
+                                        <label>Phone</label>
+                                        <p>{selectedUser.phone || 'Not set'}</p>
+                                    </div>
+                                    <div className="detail-item">
+                                        <label>Location</label>
+                                        <p>{selectedUser.location || 'Not set'}</p>
+                                    </div>
+                                    <div className="detail-item">
+                                        <label>Joined</label>
+                                        <p>{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {selectedUser.role === 'farmer' && (
+                                <>
+                                    <div className="detail-section">
+                                        <h3>Farm Information</h3>
+                                        <div className="detail-grid">
+                                            <div className="detail-item">
+                                                <label>Specialty</label>
+                                                <p>{selectedUser.specialty || 'Not set'}</p>
+                                            </div>
+                                            <div className="detail-item">
+                                                <label>About</label>
+                                                <p>{selectedUser.about || 'Not set'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {selectedUser.loanProfile && (
+                                        <div className="detail-section">
+                                            <h3>🏦 Loan Profile</h3>
+                                            <div className="detail-grid">
+                                                <div className="detail-item">
+                                                    <label>Date of Birth</label>
+                                                    <p>{selectedUser.loanProfile.dateOfBirth || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Address Line 1</label>
+                                                    <p>{selectedUser.loanProfile.addressLine1 || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Address Line 2</label>
+                                                    <p>{selectedUser.loanProfile.addressLine2 || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Pincode</label>
+                                                    <p>{selectedUser.loanProfile.pincode || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Aadhaar Number</label>
+                                                    <p>{selectedUser.loanProfile.aadhaarNumber || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>PAN Number</label>
+                                                    <p>{selectedUser.loanProfile.panNumber || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Annual Income (Rs)</label>
+                                                    <p>{selectedUser.loanProfile.annualIncome ? selectedUser.loanProfile.annualIncome.toLocaleString() : 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Requested Loan Amount (Rs)</label>
+                                                    <p>{selectedUser.loanProfile.requestedLoanAmount ? selectedUser.loanProfile.requestedLoanAmount.toLocaleString() : 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item full-width">
+                                                    <label>Loan Purpose</label>
+                                                    <p>{selectedUser.loanProfile.loanPurpose || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Bank Name</label>
+                                                    <p>{selectedUser.loanProfile.bankName || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Account Holder</label>
+                                                    <p>{selectedUser.loanProfile.accountHolderName || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Account Number</label>
+                                                    <p>{selectedUser.loanProfile.accountNumber || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>IFSC Code</label>
+                                                    <p>{selectedUser.loanProfile.ifscCode || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Land Area (Acres)</label>
+                                                    <p>{selectedUser.loanProfile.landAreaAcres || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Experience (Years)</label>
+                                                    <p>{selectedUser.loanProfile.farmingExperienceYears || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Primary Crops</label>
+                                                    <p>{selectedUser.loanProfile.primaryCrops || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Irrigation Type</label>
+                                                    <p>{selectedUser.loanProfile.irrigationType || 'Not set'}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Consent to Loan Processing</label>
+                                                    <p>{selectedUser.loanProfile.consentToLoanProcessing ? 'Yes' : 'No'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {selectedUser.role === 'buyer' && selectedUser.buyerProfile && (
+                                <div className="detail-section">
+                                    <h3>🛒 Business Profile</h3>
+                                    <div className="detail-grid">
+                                        <div className="detail-item">
+                                            <label>Business Name</label>
+                                            <p>{selectedUser.buyerProfile.businessName || 'Not set'}</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Business Type</label>
+                                            <p>{selectedUser.buyerProfile.businessType || 'Not set'}</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>GST Number</label>
+                                            <p>{selectedUser.buyerProfile.gstNumber || 'Not set'}</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Years in Business</label>
+                                            <p>{selectedUser.buyerProfile.yearsInBusiness || 'Not set'}</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Monthly Purchase Volume (Rs)</label>
+                                            <p>{selectedUser.buyerProfile.monthlyPurchaseVolume ? selectedUser.buyerProfile.monthlyPurchaseVolume.toLocaleString() : 'Not set'}</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Preferred Categories</label>
+                                            <p>{selectedUser.buyerProfile.preferredCategories || 'Not set'}</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Purchase Frequency</label>
+                                            <p>{selectedUser.buyerProfile.purchaseFrequency || 'Not set'}</p>
+                                        </div>
+                                        <div className="detail-item full-width">
+                                            <label>Delivery Address</label>
+                                            <p>{selectedUser.buyerProfile.deliveryAddress || 'Not set'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="modal-footer">
+                            <button className="btn-close" onClick={() => setSelectedUser(null)}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -29,7 +29,8 @@ router.get('/', async (req, res) => {
 // ✅ 2. GET SINGLE FARMER + PRODUCTS (Profile page) - /api/farmers/:id
 router.get('/:id', async (req, res) => {
   try {
-    const farmer = await User.findById(req.params.id).select('-password');
+    const farmer = await User.findById(req.params.id)
+      .select('name email location phone about avatar specialty createdAt');
     if (!farmer) {
       return res.status(404).json({ message: 'Farmer not found' });
     }

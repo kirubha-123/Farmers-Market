@@ -9,7 +9,7 @@ const router = express.Router();
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role, phone, location } = req.body;
+    const { name, email, password, role, phone, location, loanProfile, buyerProfile } = req.body;
 
     if (!['farmer', 'buyer'].includes(role)) {
       return res.status(400).json({ message: 'Role must be farmer or buyer' });
@@ -29,6 +29,8 @@ router.post('/register', async (req, res) => {
       role,
       phone,
       location,
+      loanProfile: role === 'farmer' ? (loanProfile || {}) : {},
+      buyerProfile: role === 'buyer' ? (buyerProfile || {}) : {},
     });
 
     const token = jwt.sign(
@@ -46,6 +48,8 @@ router.post('/register', async (req, res) => {
         role: user.role,
         phone: user.phone,
         location: user.location,
+        loanProfile: user.loanProfile || {},
+        buyerProfile: user.buyerProfile || {},
       },
     });
   } catch (err) {
@@ -80,6 +84,8 @@ router.post('/login', async (req, res) => {
         role: user.role,
         phone: user.phone,
         location: user.location,
+        loanProfile: user.loanProfile || {},
+        buyerProfile: user.buyerProfile || {},
       },
     });
   } catch (err) {
@@ -91,18 +97,32 @@ router.post('/login', async (req, res) => {
 // ✅ PUT /api/auth/profile - UPDATE PROFILE ROUTE
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { name, location, phone, about, specialty } = req.body;
+    const { name, location, phone, about, specialty, loanProfile, buyerProfile } = req.body;
     
     // Find user by ID attached from auth middleware
     const user = await User.findById(req.user.id);
     
     if (user) {
-      // Update fields if provided, otherwise keep old value
-      user.name = name || user.name;
-      user.location = location || user.location;
-      user.phone = phone || user.phone;
-      user.about = about || user.about;
-      user.specialty = specialty || user.specialty;
+      // Keep updates explicit so empty strings can be saved when needed.
+      if (name !== undefined) user.name = name;
+      if (location !== undefined) user.location = location;
+      if (phone !== undefined) user.phone = phone;
+      if (about !== undefined) user.about = about;
+      if (specialty !== undefined) user.specialty = specialty;
+
+      if (user.role === 'farmer' && loanProfile && typeof loanProfile === 'object') {
+        user.loanProfile = {
+          ...(user.loanProfile || {}),
+          ...loanProfile,
+        };
+      }
+
+      if (user.role === 'buyer' && buyerProfile && typeof buyerProfile === 'object') {
+        user.buyerProfile = {
+          ...(user.buyerProfile || {}),
+          ...buyerProfile,
+        };
+      }
       
       const updatedUser = await user.save();
       
@@ -116,6 +136,8 @@ router.put('/profile', auth, async (req, res) => {
         phone: updatedUser.phone,
         about: updatedUser.about,
         specialty: updatedUser.specialty,
+        loanProfile: updatedUser.loanProfile || {},
+        buyerProfile: updatedUser.buyerProfile || {},
       });
     } else {
       res.status(404).json({ message: 'User not found' });

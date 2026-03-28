@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Landing from './pages/Landing';
 import ProductList from './pages/ProductList';
@@ -14,7 +14,7 @@ import FarmerDashboard from './pages/FarmerDashboard';
 import FarmerProfile from './pages/FarmerProfile';
 import ProductDetail from './ProductDetail';
 
-import AiPriceAdvisor from './pages/AiPriceAdvisor';
+import MarketPricesPage from './pages/MarketPricesPage';
 import AiCropHealth from './pages/AiCropHealth';
 import AgriDoctor from './pages/AgriDoctor';
 import AdminDashboard from './pages/AdminDashboard';
@@ -61,7 +61,8 @@ function App() {
           <Route path="/farmer-dashboard" element={<FarmerRoute><FarmerDashboard /></FarmerRoute>} />
           <Route path="/farmer-orders" element={<FarmerRoute><FarmerOrders /></FarmerRoute>} />
           <Route path="/agri-doctor" element={<FarmerRoute><AgriDoctor /></FarmerRoute>} />
-          <Route path="/ai-price" element={<FarmerRoute><AiPriceAdvisor /></FarmerRoute>} />
+          <Route path="/market-prices" element={<FarmerRoute><MarketPricesPage /></FarmerRoute>} />
+          <Route path="/ai-price" element={<FarmerRoute><Navigate to="/market-prices" replace /></FarmerRoute>} />
           <Route path="/ai-crop-health" element={<FarmerRoute><AiCropHealth /></FarmerRoute>} />
 
           {/* 🛡️ Admin Routes - Protected */}

@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const { startMarketPriceScheduler } = require('./services/marketPriceSyncService');
 
 // 🔧 1. LOAD DOTENV FIRST
 dotenv.config();
@@ -38,6 +39,7 @@ app.use('/api/logistics', require('./routes/logistics'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/ai-price', require('./routes/aiPrice'));
+app.use('/api/market-prices', require('./routes/marketPrices'));
 app.use('/api/ai-crop-health', require('./routes/aiCropHealth'));
 app.use('/api/disease', require('./routes/diseaseRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
@@ -82,4 +84,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Farmers Market Backend LIVE on port ${PORT}`);
   console.log(`✅ Health Check: http://localhost:${PORT}/api/health`);
   console.log('🌱 AI Plant Disease Detection API Ready');
+  startMarketPriceScheduler();
 });
