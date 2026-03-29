@@ -1,6 +1,28 @@
 const express = require('express');
 const router = express.Router();
 const { LogisticsTrip } = require('../models/AgriModels');
+const { findDistrictFacilities, availableDistricts } = require('../data/districtTransportFacilities');
+
+// Get list of all supported districts
+router.get('/districts', async (req, res) => {
+    return res.status(200).json({ districts: availableDistricts });
+});
+
+// Get district-wise transport facilities and fixed delivery prices
+router.get('/district-facilities', async (req, res) => {
+    try {
+        const district = req.query.district || '';
+        const { matchedDistrict, facilities } = findDistrictFacilities(district);
+
+        return res.status(200).json({
+            districtRequested: district,
+            districtMatched: matchedDistrict,
+            facilities
+        });
+    } catch (err) {
+        return res.status(500).json({ message: 'District transport facilities fetch failed' });
+    }
+});
 
 // Get real-world logistics trips for Tamil Nadu
 router.get('/', async (req, res) => {

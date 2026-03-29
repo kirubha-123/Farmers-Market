@@ -67,7 +67,7 @@ const fulfillOrder = async (orderId) => {
 // Create Razorpay Order
 router.post('/create-order', auth, async (req, res) => {
   try {
-    const { amount, farmerId, items, address } = req.body;
+    const { amount, farmerId, items, address, deliveryCharge = 0, transportDetails = null } = req.body;
     const isDummy = process.env.RAZORPAY_KEY_ID?.includes('dummy');
 
     let rzpOrderId = `mock_order_${Date.now()}`;
@@ -100,7 +100,9 @@ router.post('/create-order', auth, async (req, res) => {
       farmer: farmerId,
       items,
       totalAmount: amount,
+      deliveryCharge,
       address,
+      transportDetails,
       paymentId: rzpOrderId,
       paymentStatus: 'pending',
       orderStatus: 'pending'

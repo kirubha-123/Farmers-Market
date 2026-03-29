@@ -9,14 +9,16 @@ const marketPriceSchema = new mongoose.Schema(
     minPrice: { type: Number, required: true, min: 0 },
     maxPrice: { type: Number, required: true, min: 0 },
     modalPrice: { type: Number, required: true, min: 0 },
+    observedAt: { type: Date, default: Date.now, index: true },
     unit: { type: String, default: 'kg', trim: true },
     source: { type: String, default: 'manual' }
   },
   { timestamps: true }
 );
 
-marketPriceSchema.index({ market: 1, crop: 1, date: 1 }, { unique: true });
-marketPriceSchema.index({ market: 1, date: 1 });
-marketPriceSchema.index({ crop: 1, date: 1 });
+// Historical snapshots are preserved, so this index is intentionally non-unique.
+marketPriceSchema.index({ market: 1, crop: 1, date: 1, observedAt: -1 });
+marketPriceSchema.index({ market: 1, date: 1, observedAt: -1 });
+marketPriceSchema.index({ crop: 1, date: 1, observedAt: -1 });
 
 module.exports = mongoose.model('MarketPrice', marketPriceSchema);

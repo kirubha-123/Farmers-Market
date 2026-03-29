@@ -7,7 +7,7 @@ const CheckoutAddress = () => {
     const [addresses, setAddresses] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
     const [showForm, setShowForm] = useState(false);
-    const [newAddr, setNewAddr] = useState({ fullName: '', phone: '', house: '', street: '', city: '', state: '', pincode: '' });
+    const [newAddr, setNewAddr] = useState({ fullName: '', phone: '', house: '', street: '', district: '', city: '', state: '', pincode: '' });
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
 
@@ -40,7 +40,7 @@ const CheckoutAddress = () => {
             setAddresses([...addresses, res.data]);
             setSelectedId(res.data._id);
             setShowForm(false);
-            setNewAddr({ fullName: '', phone: '', house: '', street: '', city: '', state: '', pincode: '' });
+            setNewAddr({ fullName: '', phone: '', house: '', street: '', district: '', city: '', state: '', pincode: '' });
         } catch (err) {
             console.error("Add address error:", err);
             alert(err.response?.data?.message || "Error adding address");
@@ -72,7 +72,7 @@ const CheckoutAddress = () => {
                             <div className="addr-details">
                                 <strong>{addr.fullName}</strong>
                                 <p>{addr.house}, {addr.street}</p>
-                                <p>{addr.city}, {addr.state} - {addr.pincode}</p>
+                                <p>{addr.district || addr.city}, {addr.city}, {addr.state} - {addr.pincode}</p>
                                 <p>Phone: {addr.phone}</p>
                             </div>
                         </div>
@@ -88,6 +88,7 @@ const CheckoutAddress = () => {
                         <input type="text" placeholder="House/Flat No" value={newAddr.house} required onChange={e => setNewAddr({...newAddr, house: e.target.value})} />
                         <input type="text" placeholder="Street/Area" value={newAddr.street} required onChange={e => setNewAddr({...newAddr, street: e.target.value})} />
                         <div className="input-row">
+                            <input type="text" placeholder="District" value={newAddr.district} required onChange={e => setNewAddr({...newAddr, district: e.target.value})} />
                             <input type="text" placeholder="City" value={newAddr.city} required onChange={e => setNewAddr({...newAddr, city: e.target.value})} />
                             <input type="text" placeholder="State" value={newAddr.state} required onChange={e => setNewAddr({...newAddr, state: e.target.value})} />
                         </div>

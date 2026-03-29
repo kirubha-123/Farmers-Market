@@ -68,8 +68,13 @@ const syncState = {
   lastRunAt: null,
   lastSuccessAt: null,
   lastError: null,
-  lastInsertedRows: 0
+  lastInsertedRows: 0,
+  lastChangedRows: 0,
+  lastUnchangedRows: 0,
+  indexMigrated: false
 };
+
+let hasCheckedLegacyIndex = false;
 
 function toTitleCase(value = '') {
   return value
@@ -119,6 +124,81 @@ function normalizeRows(rawRows = []) {
       source: row.source || 'remote-feed'
     }))
     .filter((row) => row.minPrice >= 0 && row.maxPrice >= 0 && row.modalPrice >= 0);
+}
+
+function toDateKey(dateValue) {
+  return new Date(dateValue).toISOString().slice(0, 10);
+}
+
+function makeSnapshotKey(row) {
+  return `${row.market}|${row.crop}|${toDateKey(row.date)}`;
+}
+
+function hasRowChanged(previousRow, nextRow) {
+  if (!previousRow) return true;
+
+  return (
+    Number(previousRow.minPrice) !== Number(nextRow.minPrice) ||
+    Number(previousRow.maxPrice) !== Number(nextRow.maxPrice) ||
+    Number(previousRow.modalPrice) !== Number(nextRow.modalPrice) ||
+    String(previousRow.unit || '') !== String(nextRow.unit || '')
+  );
+}
+
+function startAndEndOfDate(inputDate) {
+  const start = new Date(Date.UTC(
+    inputDate.getUTCFullYear(),
+    inputDate.getUTCMonth(),
+    inputDate.getUTCDate()
+  ));
+
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+
+  return { start, end };
+}
+
+async function ensureLegacyIndexDropped() {
+  if (hasCheckedLegacyIndex) return;
+
+  try {
+    const indexes = await MarketPrice.collection.indexes();
+    const legacy = indexes.find((idx) => idx.name === 'market_1_crop_1_date_1' && idx.unique);
+
+    if (legacy) {
+      await MarketPrice.collection.dropIndex('market_1_crop_1_date_1');
+      console.log('MarketPrice: dropped legacy unique index market_1_crop_1_date_1');
+    }
+
+    syncState.indexMigrated = true;
+    hasCheckedLegacyIndex = true;
+  } catch (err) {
+    console.warn(`MarketPrice index migration skipped: ${err.message}`);
+    hasCheckedLegacyIndex = true;
+  }
+}
+
+async function getLatestRowsForDate(dateValue) {
+  const { start, end } = startAndEndOfDate(dateValue);
+
+  const docs = await MarketPrice.aggregate([
+    { $match: { date: { $gte: start, $lt: end } } },
+    { $sort: { observedAt: -1, updatedAt: -1 } },
+    {
+      $group: {
+        _id: { market: '$market', crop: '$crop', date: '$date' },
+        latest: { $first: '$$ROOT' }
+      }
+    }
+  ]);
+
+  const latestByKey = new Map();
+  docs.forEach((entry) => {
+    const row = entry.latest;
+    latestByKey.set(makeSnapshotKey(row), row);
+  });
+
+  return latestByKey;
 }
 
 function decodeHtml(html = '') {
@@ -328,6 +408,8 @@ async function syncMarketPrices({ reason = 'manual' } = {}) {
   syncState.lastRunAt = new Date().toISOString();
 
   try {
+    await ensureLegacyIndexDropped();
+
     const sourceResult = await fetchRowsFromConfiguredSource();
     const normalizedRows = sourceResult.rows;
     syncState.provider = sourceResult.provider;
@@ -342,28 +424,58 @@ async function syncMarketPrices({ reason = 'manual' } = {}) {
       };
     }
 
-    const ops = normalizedRows.map((row) => ({
-      updateOne: {
-        filter: { market: row.market, crop: row.crop, date: row.date },
-        update: { $set: row },
-        upsert: true
-      }
-    }));
+    const rowsByDate = normalizedRows.reduce((acc, row) => {
+      const key = toDateKey(row.date);
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(row);
+      return acc;
+    }, {});
 
-    const result = await MarketPrice.bulkWrite(ops, { ordered: false });
+    const latestByKey = new Map();
+    const dateKeys = Object.keys(rowsByDate);
+    for (const dateKey of dateKeys) {
+      const dateLatestMap = await getLatestRowsForDate(new Date(`${dateKey}T00:00:00.000Z`));
+      dateLatestMap.forEach((value, key) => latestByKey.set(key, value));
+    }
+
+    const now = new Date();
+    const changedRows = [];
+    let unchangedRows = 0;
+
+    normalizedRows.forEach((row) => {
+      const key = makeSnapshotKey(row);
+      const previous = latestByKey.get(key);
+
+      if (hasRowChanged(previous, row)) {
+        changedRows.push({
+          ...row,
+          observedAt: now
+        });
+      } else {
+        unchangedRows += 1;
+      }
+    });
+
+    let inserted = 0;
+    if (changedRows.length > 0) {
+      const insertResult = await MarketPrice.insertMany(changedRows, { ordered: false });
+      inserted = insertResult.length;
+    }
 
     syncState.lastSuccessAt = new Date().toISOString();
     syncState.lastError = null;
-    syncState.lastInsertedRows = ops.length;
+    syncState.lastInsertedRows = inserted;
+    syncState.lastChangedRows = changedRows.length;
+    syncState.lastUnchangedRows = unchangedRows;
 
     return {
       success: true,
       reason,
       provider: sourceResult.provider,
-      totalRows: ops.length,
-      upserted: result.upsertedCount || 0,
-      modified: result.modifiedCount || 0,
-      matched: result.matchedCount || 0,
+      totalRows: normalizedRows.length,
+      changedRows: changedRows.length,
+      unchangedRows,
+      inserted,
       lastSuccessAt: syncState.lastSuccessAt
     };
   } catch (err) {

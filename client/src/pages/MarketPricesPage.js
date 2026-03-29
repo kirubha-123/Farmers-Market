@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CartesianGrid,
@@ -164,9 +164,16 @@ const MarketPricesPage = () => {
 
   const [loadingToday, setLoadingToday] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [liveChangedCrops, setLiveChangedCrops] = useState([]);
+  const [lastLiveChangeAt, setLastLiveChangeAt] = useState('');
   const [connectionError, setConnectionError] = useState(null);
   const [todayError, setTodayError] = useState(null);
   const [historyError, setHistoryError] = useState(null);
+
+  const REFRESH_SECONDS = 60;
+  const prevTodaySnapshotRef = useRef(new Map());
+  const liveHighlightTimerRef = useRef(null);
 
   useEffect(() => {
     const role = localStorage.getItem('role');
@@ -208,6 +215,19 @@ const MarketPricesPage = () => {
     return () => clearInterval(retryTimer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionError]);
+
+  useEffect(() => {
+    if (!autoRefreshEnabled) return;
+    if (viewMode !== 'today') return;
+    if (!market || !date || connectionError) return;
+
+    const timer = setInterval(() => {
+      loadTodayPrices();
+    }, REFRESH_SECONDS * 1000);
+
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefreshEnabled, viewMode, market, date, connectionError]);
 
   const loadMarkets = async () => {
     setConnectionError(null);
@@ -257,7 +277,39 @@ const MarketPricesPage = () => {
         params: { market, date }
       });
 
-      setTodayRows(response.data?.rows || []);
+      const nextRows = response.data?.rows || [];
+      const nextSnapshot = new Map();
+      nextRows.forEach((row) => {
+        const signature = `${row.minPrice}|${row.modalPrice}|${row.maxPrice}|${row.unit}`;
+        nextSnapshot.set(row.crop, signature);
+      });
+
+      const changedCrops = [];
+      if (prevTodaySnapshotRef.current.size > 0) {
+        nextRows.forEach((row) => {
+          const prevSignature = prevTodaySnapshotRef.current.get(row.crop);
+          const nextSignature = nextSnapshot.get(row.crop);
+          if (prevSignature && prevSignature !== nextSignature) {
+            changedCrops.push(row.crop);
+          }
+        });
+      }
+
+      prevTodaySnapshotRef.current = nextSnapshot;
+      setTodayRows(nextRows);
+
+      if (changedCrops.length > 0) {
+        setLiveChangedCrops(changedCrops);
+        setLastLiveChangeAt(new Date().toISOString());
+
+        if (liveHighlightTimerRef.current) {
+          clearTimeout(liveHighlightTimerRef.current);
+        }
+        liveHighlightTimerRef.current = setTimeout(() => {
+          setLiveChangedCrops([]);
+        }, 15000);
+      }
+
       setTodaySource(response.data?.source || '');
       setLastUpdated(response.data?.lastUpdated || '');
     } catch (err) {
@@ -269,6 +321,14 @@ const MarketPricesPage = () => {
       setLoadingToday(false);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (liveHighlightTimerRef.current) {
+        clearTimeout(liveHighlightTimerRef.current);
+      }
+    };
+  }, []);
 
   const loadHistory = async () => {
     if (!crop) {
@@ -336,11 +396,20 @@ const MarketPricesPage = () => {
           <div className="market-meta-row">
             <span className="chip">Market: {market ? withTamilLabel(market, MARKET_TA) : 'N/A'}</span>
             <span className="chip">Date: {date}</span>
+            <span className={`chip ${autoRefreshEnabled ? 'ok' : 'warn'}`}>
+              Auto refresh: {autoRefreshEnabled ? `ON (${REFRESH_SECONDS}s)` : 'OFF'}
+            </span>
+            <span className={`chip ${liveChangedCrops.length > 0 ? 'ok' : ''}`}>
+              Live changes: {liveChangedCrops.length}
+            </span>
             <span className={`chip ${todaySource.includes('fallback') || todaySource === 'offline' ? 'warn' : 'ok'}`}>
               Source: {todaySource || 'loading'}
             </span>
             {lastUpdated && (
               <span className="chip">Updated: {new Date(lastUpdated).toLocaleString('en-IN')}</span>
+            )}
+            {lastLiveChangeAt && (
+              <span className="chip ok">Last change: {new Date(lastLiveChangeAt).toLocaleTimeString('en-IN')}</span>
             )}
           </div>
           <div className="market-pills">
@@ -394,6 +463,13 @@ const MarketPricesPage = () => {
               <button onClick={loadTodayPrices} className="btn-primary" disabled={loadingToday}>
                 {loadingToday ? 'Loading...' : 'Refresh Today Prices'}
               </button>
+              <button
+                onClick={() => setAutoRefreshEnabled((prev) => !prev)}
+                className="btn-primary"
+                type="button"
+              >
+                {autoRefreshEnabled ? 'Disable Auto Refresh' : 'Enable Auto Refresh'}
+              </button>
             </div>
           ) : (
             <div className="controls-grid history-controls">
@@ -446,10 +522,14 @@ const MarketPricesPage = () => {
                   </thead>
                   <tbody>
                     {todayRows.map((row) => (
-                      <tr key={`${row.crop}-${row.date}`}>
+                      <tr
+                        key={`${row.crop}-${row.date}`}
+                        className={liveChangedCrops.includes(row.crop) ? 'row-live-changed' : ''}
+                      >
                         <td>
                           <div>{row.crop}</div>
                           {getTamilCrop(row.crop) && <div className="ta-subtext">{getTamilCrop(row.crop)}</div>}
+                          {row.observedAt && <div className="ta-subtext">Updated: {new Date(row.observedAt).toLocaleTimeString('en-IN')}</div>}
                         </td>
                         <td>Rs {row.minPrice}</td>
                         <td className="modal-cell">Rs {row.modalPrice}</td>

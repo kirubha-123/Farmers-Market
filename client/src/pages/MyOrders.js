@@ -85,7 +85,12 @@ const MyOrders = () => {
 
                                 <div className="order-delivery">
                                     <p className="label">Delivery Address</p>
-                                    <p className="addr-preview">{order.address?.fullName || 'N/A'}, {order.address?.city || ''}</p>
+                                    <p className="addr-preview">{order.address?.fullName || 'N/A'}, {order.address?.district || order.address?.city || ''}</p>
+                                    {order.transportDetails?.facilityName && (
+                                        <p className="addr-preview">
+                                            Transport: {order.transportDetails.facilityName} ({order.transportDetails.vehicleType}) - ₹{order.deliveryCharge || order.transportDetails.price || 0}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         ))}

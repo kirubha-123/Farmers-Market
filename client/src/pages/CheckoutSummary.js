@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../api';
 import './Checkout.css';
 
 const CheckoutSummary = () => {
     const [cartItems, setCartItems] = useState([]);
     const [address, setAddress] = useState(null);
+    const [transportData, setTransportData] = useState({ districtMatched: '', facilities: [] });
+    const [selectedFacility, setSelectedFacility] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -24,13 +27,56 @@ const CheckoutSummary = () => {
         setAddress(JSON.parse(storedAddress));
     }, [navigate]);
 
+    useEffect(() => {
+        const fetchDistrictTransport = async () => {
+            if (!address) return;
+            const districtQuery = address.district || address.city;
+
+            try {
+                const res = await api.get('/logistics/district-facilities', {
+                    params: { district: districtQuery }
+                });
+
+                const facilities = res.data?.facilities || [];
+                setTransportData({
+                    districtMatched: res.data?.districtMatched || districtQuery,
+                    facilities
+                });
+
+                if (facilities.length > 0) {
+                    const cheapest = facilities.reduce((min, item) => (item.price < min.price ? item : min), facilities[0]);
+                    setSelectedFacility(cheapest);
+                } else {
+                    setSelectedFacility(null);
+                }
+            } catch (err) {
+                console.error('Transport facilities fetch failed:', err);
+                setTransportData({ districtMatched: address.district || address.city || 'General', facilities: [] });
+                setSelectedFacility(null);
+            }
+        };
+
+        fetchDistrictTransport();
+    }, [address]);
+
     const subtotal = cartItems.reduce((acc, it) => acc + (it.pricePerKg * it.quantityKg), 0);
-    const delivery = 50;
+    const delivery = selectedFacility?.price || 0;
     const total = subtotal + delivery;
 
     const handleProceedToPayment = () => {
+        if (!selectedFacility) {
+            alert('Please choose a transport facility to continue');
+            return;
+        }
+
         // Save final totals
-        localStorage.setItem('checkoutTotal', JSON.stringify({ subtotal, delivery, total }));
+        localStorage.setItem('checkoutTotal', JSON.stringify({
+            subtotal,
+            delivery,
+            total,
+            district: transportData.districtMatched,
+            transportDetails: selectedFacility
+        }));
         navigate('/checkout-payment');
     };
 
@@ -51,7 +97,7 @@ const CheckoutSummary = () => {
                     <h3>Delivery To:</h3>
                     <div className="address-preview">
                         <strong>{address.fullName}</strong>
-                        <p>{address.house}, {address.street}, {address.city}, {address.state} - {address.pincode}</p>
+                        <p>{address.house}, {address.street}, {address.district || address.city}, {address.city}, {address.state} - {address.pincode}</p>
                         <p>Phone: {address.phone}</p>
                     </div>
                 </div>
@@ -78,6 +124,12 @@ const CheckoutSummary = () => {
                         <span>Delivery Charge</span>
                         <span>₹{delivery}</span>
                     </div>
+                    {selectedFacility && (
+                        <div className="breakdown-row">
+                            <span>Transport Facility</span>
+                            <span>{selectedFacility.facilityName}</span>
+                        </div>
+                    )}
                     <div className="breakdown-row total">
                         <span>Total Payble</span>
                         <span>₹{total}</span>

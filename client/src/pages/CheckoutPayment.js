@@ -34,6 +34,10 @@ const CheckoutPayment = () => {
 
             const orderPayload = {
                 amount: totalData.total,
+                deliveryCharge: totalData.delivery || 0,
+                transportDetails: totalData.transportDetails
+                    ? { ...totalData.transportDetails, district: totalData.district || address.district || address.city }
+                    : null,
                 farmerId: farmerId,
                 items: cartItems.map(it => ({
                     productId: it._id,
@@ -47,6 +51,7 @@ const CheckoutPayment = () => {
                     phone: address.phone,
                     house: address.house,
                     street: address.street,
+                    district: address.district || address.city,
                     city: address.city,
                     state: address.state,
                     pincode: address.pincode

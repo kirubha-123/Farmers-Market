@@ -115,6 +115,7 @@ function normalizeDbRecord(doc) {
     market: doc.market,
     crop: doc.crop,
     date: doc.date.toISOString().slice(0, 10),
+    observedAt: doc.observedAt ? new Date(doc.observedAt).toISOString() : new Date(doc.updatedAt).toISOString(),
     minPrice: doc.minPrice,
     maxPrice: doc.maxPrice,
     modalPrice: doc.modalPrice,
@@ -179,7 +180,19 @@ router.get('/today', async (req, res) => {
     }
 
     const { start, end } = startAndEndOfDate(parsedDate);
-    const docs = await MarketPrice.find({ market, date: { $gte: start, $lt: end } }).sort({ crop: 1 });
+
+    const docs = await MarketPrice.aggregate([
+      { $match: { market, date: { $gte: start, $lt: end } } },
+      { $sort: { observedAt: -1, updatedAt: -1 } },
+      {
+        $group: {
+          _id: { market: '$market', crop: '$crop' },
+          latest: { $first: '$$ROOT' }
+        }
+      },
+      { $replaceRoot: { newRoot: '$latest' } },
+      { $sort: { crop: 1 } }
+    ]);
 
     let rows;
     let source;
@@ -246,18 +259,26 @@ router.get('/history', async (req, res) => {
         $gte: startAndEndOfDate(fromDate).start,
         $lt: startAndEndOfDate(toDate).end
       }
-    }).sort({ date: 1, updatedAt: 1 });
+    }).sort({ date: 1, observedAt: 1, updatedAt: 1 });
 
     let series;
     let source;
+    const granularity = String(req.query.granularity || 'daily').toLowerCase();
 
     if (docs.length > 0) {
-      const byDate = new Map();
-      docs.forEach((doc) => {
-        const key = doc.date.toISOString().slice(0, 10);
-        byDate.set(key, normalizeDbRecord(doc));
-      });
-      series = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+      if (granularity === 'intraday') {
+        series = docs.map((doc) => ({
+          ...normalizeDbRecord(doc),
+          date: (doc.observedAt || doc.updatedAt).toISOString()
+        }));
+      } else {
+        const byDate = new Map();
+        docs.forEach((doc) => {
+          const key = doc.date.toISOString().slice(0, 10);
+          byDate.set(key, normalizeDbRecord(doc));
+        });
+        series = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+      }
       source = 'database';
     } else {
       series = enumerateDates(fromDate, toDate)
@@ -325,45 +346,32 @@ router.post('/admin/bulk', adminAuth, async (req, res) => {
     }
 
     const normalizedMarket = toTitleCase(market);
-    const ops = prices
+    const rows = prices
       .filter((item) => item && item.crop)
       .map((item) => ({
-        updateOne: {
-          filter: {
-            market: normalizedMarket,
-            crop: toTitleCase(item.crop),
-            date: parsedDate
-          },
-          update: {
-            $set: {
-              market: normalizedMarket,
-              state: state || 'Tamil Nadu',
-              crop: toTitleCase(item.crop),
-              date: parsedDate,
-              minPrice: Number(item.minPrice || 0),
-              maxPrice: Number(item.maxPrice || 0),
-              modalPrice: Number(item.modalPrice || 0),
-              unit: item.unit || 'kg',
-              source: source || 'manual-upload'
-            }
-          },
-          upsert: true
-        }
+        market: normalizedMarket,
+        state: state || 'Tamil Nadu',
+        crop: toTitleCase(item.crop),
+        date: parsedDate,
+        observedAt: new Date(),
+        minPrice: Number(item.minPrice || 0),
+        maxPrice: Number(item.maxPrice || 0),
+        modalPrice: Number(item.modalPrice || 0),
+        unit: item.unit || 'kg',
+        source: source || 'manual-upload'
       }));
 
-    if (!ops.length) {
+    if (!rows.length) {
       return res.status(400).json({ success: false, message: 'No valid crop rows in prices[]' });
     }
 
-    const result = await MarketPrice.bulkWrite(ops, { ordered: false });
+    const inserted = await MarketPrice.insertMany(rows, { ordered: false });
 
     res.json({
       success: true,
       message: 'Market prices saved',
-      upserted: result.upsertedCount || 0,
-      modified: result.modifiedCount || 0,
-      matched: result.matchedCount || 0,
-      totalRows: ops.length
+      inserted: inserted.length,
+      totalRows: rows.length
     });
   } catch (err) {
     console.error('Bulk ingest error:', err.message);

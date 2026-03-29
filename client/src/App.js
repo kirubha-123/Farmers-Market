@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import FarmersPage from './pages/FarmersPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
+import TransportPage from './pages/TransportPage';
 import ProfilePage from './pages/ProfilePage';
 import FarmerDashboard from './pages/FarmerDashboard';
 import FarmerProfile from './pages/FarmerProfile';
@@ -41,6 +42,7 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/farmers" element={<FarmersPage />} />
+          <Route path="/transport" element={<FarmerRoute><TransportPage /></FarmerRoute>} />
           <Route path="/farmers/:id" element={<FarmerProfile />} />
           <Route path="/product/:productId" element={<ProductDetail />} />
 

@@ -17,9 +17,17 @@ const orderSchema = new mongoose.Schema({
     phone: String,
     house: String,
     street: String,
+    district: String,
     city: String,
     state: String,
     pincode: String
+  },
+  transportDetails: {
+    district: String,
+    facilityName: String,
+    vehicleType: String,
+    etaHours: Number,
+    price: Number
   },
   paymentId: { type: String }, // Razorpay Payment ID or Order ID
   paymentStatus: {

@@ -281,6 +281,20 @@ thead th {
     color: #475569;
 }
 
+.row-live-changed {
+    animation: rowPulse 1.2s ease-in-out 2;
+    background: rgba(34, 197, 94, 0.12);
+}
+
+@keyframes rowPulse {
+    0% {
+        background: rgba(34, 197, 94, 0.3);
+    }
+    100% {
+        background: rgba(34, 197, 94, 0.12);
+    }
+}
+
 .chart-wrap {
     margin-top: 0.8rem;
     background: #f8fafc;

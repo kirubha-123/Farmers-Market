@@ -7,7 +7,7 @@ const auth = require('../middleware/authMiddleware');
 router.post('/add', auth, async (req, res) => {
   try {
     console.log('📬 Address addition request:', req.body);
-    const { fullName, phone, house, street, city, state, pincode, isDefault } = req.body;
+    const { fullName, phone, house, street, district, city, state, pincode, isDefault } = req.body;
     
     if (isDefault) {
       await Address.updateMany({ userId: req.user.id }, { isDefault: false });
@@ -19,6 +19,7 @@ router.post('/add', auth, async (req, res) => {
       phone: phone || '',
       house: house || '',
       street: street || '',
+      district: district || city || '',
       city: city || '',
       state: state || '',
       pincode: pincode || '',
