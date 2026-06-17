@@ -1,4 +1,4 @@
-<img width="575" height="816" alt="image" src="https://github.com/user-attachments/assets/392e7698-bdf2-48a8-b5cc-9f5375a6c1e3" /># Farmers Market 🌾
+# Farmers Market 🌾
 
 **A modern web platform connecting local farmers with consumers, enabling fresh produce ordering and community engagement.**
 
